@@ -18,8 +18,8 @@ export interface TokenPayload {
  */
 export const generateAccessToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, AppCreds.auth.jwtSecret, {
-    expiresIn: AppCreds.auth.accessTokenExpiry,
-  });
+    expiresIn: AppCreds.auth.accessTokenExpiry as string,
+  } as jwt.SignOptions);
 };
 
 /**
@@ -27,8 +27,8 @@ export const generateAccessToken = (payload: TokenPayload): string => {
  */
 export const generateRefreshToken = (payload: TokenPayload): string => {
   return jwt.sign(payload, AppCreds.auth.jwtRefreshSecret, {
-    expiresIn: AppCreds.auth.refreshTokenExpiry,
-  });
+    expiresIn: AppCreds.auth.refreshTokenExpiry as string,
+  } as jwt.SignOptions);
 };
 
 /**

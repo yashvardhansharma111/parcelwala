@@ -82,5 +82,12 @@ export const cacheService = {
   has: (key: string): boolean => {
     return cache.has(key);
   },
+
+  /**
+   * Get all cache keys (for debugging)
+   */
+  getAllKeys: (): string[] => {
+    return cache.keys();
+  },
 };
 

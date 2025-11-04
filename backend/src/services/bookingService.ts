@@ -482,6 +482,7 @@ export const getBookingStatistics = async (): Promise<{
 
     // Calculate statistics
     const byStatus: Record<BookingStatus, number> = {
+      PendingPayment: 0,
       Created: 0,
       Picked: 0,
       Shipped: 0,

@@ -37,6 +37,30 @@ const extractPhoneNumber = (phoneNumber: string): string => {
 };
 
 /**
+ * Normalize phone number to consistent format for cache key
+ * Always returns +91XXXXXXXXXX format
+ */
+const normalizePhoneNumber = (phoneNumber: string): string => {
+  // Remove all non-digit characters
+  const digits = phoneNumber.replace(/\D/g, "");
+  
+  // Extract 10-digit number
+  let phoneDigits: string;
+  if (digits.startsWith("91") && digits.length === 12) {
+    phoneDigits = digits.slice(2);
+  } else if (digits.length === 10) {
+    phoneDigits = digits;
+  } else if (digits.length > 10) {
+    phoneDigits = digits.slice(-10);
+  } else {
+    throw createError("Invalid phone number format", 400);
+  }
+  
+  // Return normalized format: +91XXXXXXXXXX
+  return `+91${phoneDigits}`;
+};
+
+/**
  * Send OTP via Renflair SMS API
  * API Endpoint: https://sms.renflair.in/V1.php
  * Format: https://sms.renflair.in/V1.php?API={API_KEY}&PHONE={PHONE}&OTP={OTP}
@@ -55,8 +79,11 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
     // Generate 6-digit OTP
     const otp = generateOTP();
 
-    // Store OTP in cache for 5 minutes
-    cacheService.setOTP(phoneNumber, otp, 300);
+    // Normalize phone number for consistent cache key
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
+    // Store OTP in cache for 5 minutes (use normalized phone as key)
+    cacheService.setOTP(normalizedPhone, otp, 300);
 
     // Extract 10-digit phone number (without country code)
     const phone = extractPhoneNumber(phoneNumber);
@@ -103,6 +130,7 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
     }
 
     console.log(`✅ OTP sent successfully to ${phone}: ${otp}`);
+    console.log(`📝 OTP stored in cache with key: ${normalizedPhone}`);
   } catch (error: any) {
     console.error("Error sending OTP:", error);
     
@@ -128,19 +156,29 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
  * Verify OTP
  */
 export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
-  const storedOTP = cacheService.getOTP(phoneNumber);
+  try {
+    // Normalize phone number to match the key used when storing OTP
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    
+    const storedOTP = cacheService.getOTP(normalizedPhone);
 
-  if (!storedOTP) {
-    return false; // OTP not found or expired
+    if (!storedOTP) {
+      console.log(`OTP not found for ${normalizedPhone}. Available keys:`, cacheService.getAllKeys?.() || "N/A");
+      return false; // OTP not found or expired
+    }
+
+    if (storedOTP !== otp) {
+      console.log(`OTP mismatch for ${normalizedPhone}. Expected: ${storedOTP}, Received: ${otp}`);
+      return false; // OTP mismatch
+    }
+
+    // OTP is valid, delete it from cache (one-time use)
+    cacheService.deleteOTP(normalizedPhone);
+
+    return true;
+  } catch (error: any) {
+    console.error("Error verifying OTP:", error);
+    return false;
   }
-
-  if (storedOTP !== otp) {
-    return false; // OTP mismatch
-  }
-
-  // OTP is valid, delete it from cache (one-time use)
-  cacheService.deleteOTP(phoneNumber);
-
-  return true;
 };
 
