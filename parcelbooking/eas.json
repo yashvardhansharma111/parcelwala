@@ -7,9 +7,10 @@
     "apk": {
       "android": {
         "buildType": "apk",
-        "autoIncrement": "versionCode"
+        "autoIncrement": "versionCode",
+        "applicationArchivePath": "android/app/build/outputs/apk/release/app-release.apk"
       },
-      "distribution": "store",
+      "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAwGkNqQcidik3TrJZauWsh572PDnnAV90",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "parcelbooking001.firebaseapp.com",
