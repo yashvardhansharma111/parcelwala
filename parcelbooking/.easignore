@@ -1,7 +1,7 @@
 # Ignore EVERYTHING by default
 **
 
-# Allow only these project files/folders
+# Allow only essential project files for EAS
 !app.json
 !app.config.js
 !package.json
@@ -17,20 +17,27 @@
 !index.tsx
 !App.js
 !App.tsx
+
+# Allow source code & app assets
 !src/**
 !assets/**
+
+# Allow native folders (but NOT their build junk)
 !android/**
 !ios/**
 
-# Still exclude build outputs/caches inside allowed dirs
+# Exclude build junk INSIDE allowed native dirs
 android/**/build/**
 android/.gradle/**
 android/.cxx/**
 ios/Pods/**
+ios/build/**
+
+# Expo caches
 .expo/**
 .expo-shared/**
 
-# Never upload giant artifacts
+# Never upload heavy artifacts
 **/*.apk
 **/*.aab
 **/*.ipa
@@ -46,6 +53,6 @@ ios/Pods/**
 **/*.wav
 **/*.mkv
 
-# Secrets / keystores
+# Secrets / local config
 **/*.keystore
 *.env*
