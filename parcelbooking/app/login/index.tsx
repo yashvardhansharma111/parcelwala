@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { Image } from "react-native";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
@@ -119,6 +120,11 @@ export default function LoginScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
+          <Image
+            source={require("../../assets/images/parcelwalla.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={styles.title}>Parcel Booking</Text>
           <Text style={styles.subtitle}>
             {otpSent
@@ -301,6 +307,12 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
+  },
+  logo: {
+    width: 150,
+    height: 150,
+    alignSelf: "center",
+    marginBottom: 24,
   },
   title: {
     fontSize: 32,

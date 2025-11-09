@@ -83,7 +83,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Don't navigate until router is ready and we've checked auth
-    if (!isReady || loading || !segments || segments.length === 0) return;
+    if (!isReady || loading || !segments) return;
 
     const currentSegment = segments[0];
     const inAuthGroup = currentSegment === 'login';

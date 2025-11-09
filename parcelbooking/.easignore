@@ -1,0 +1,12 @@
+node_modules/
+.expo/
+.expo-shared/
+.cache/
+dist/
+build/
+*.map
+__tests__/
+coverage/
+docs/
+.DS_Store
+Thumbs.db
