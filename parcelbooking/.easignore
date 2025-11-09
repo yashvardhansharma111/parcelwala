@@ -1,57 +1,51 @@
-# VCS / tooling
-.git/
-.husky/
-.vscode/
-.idea/
-.DS_Store
+# Ignore EVERYTHING by default
+**
 
-# Package manager cache
-npm-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Allow only these project files/folders
+!app.json
+!app.config.js
+!package.json
+!package-lock.json
+!yarn.lock
+!pnpm-lock.yaml
+!eas.json
+!babel.config.js
+!metro.config.js
+!tsconfig.json
+!index.js
+!index.ts
+!index.tsx
+!App.js
+!App.tsx
+!src/**
+!assets/**
+!android/**
+!ios/**
 
-# Node / build outputs (never upload)
-node_modules/
-dist/
-build/
+# Still exclude build outputs/caches inside allowed dirs
+android/**/build/**
+android/.gradle/**
+android/.cxx/**
+ios/Pods/**
+.expo/**
+.expo-shared/**
 
-# React Native / Android
-android/.gradle/
-android/.cxx/
-android/build/
-android/app/build/
-android/app/intermediates/
-android/.idea/
-**/*.keystore
-
-# iOS (if exists)
-ios/Pods/
-ios/build/
-ios/*.xcodeproj/project.xcworkspace/
-ios/*.xcworkspace/
-
-# Expo caches
-.expo/
-.expo-shared/
-
-# Assets that explode size (keep only what you truly need)
-**/*.mp4
-**/*.mov
-**/*.wav
-**/*.psd
-**/*.ai
-**/*.zip
-**/*.rar
-**/*.7z
-
-# Don’t upload generated binaries / artifacts
+# Never upload giant artifacts
 **/*.apk
 **/*.aab
 **/*.ipa
 **/*.tar
 **/*.tar.gz
+**/*.zip
+**/*.rar
+**/*.7z
+**/*.psd
+**/*.ai
+**/*.mov
+**/*.mp4
+**/*.wav
+**/*.mkv
 
-# Your previous folder that had big artifacts
-parcelbooking/debug/
-parcelbooking/release/
-parcelbooking/artifact.tar.gz
+# Secrets / keystores
+**/*.keystore
+*.env*
