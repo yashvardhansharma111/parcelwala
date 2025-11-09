@@ -3,7 +3,7 @@
  * View and update booking status
  */
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -12,7 +12,12 @@ import {
   Alert,
   TouchableOpacity,
   Modal,
+  TextInput,
+  Platform,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { captureRef } from "react-native-view-shot";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useBooking } from "../../hooks/useBooking";
 import * as bookingService from "../../services/bookingService";
@@ -38,6 +43,14 @@ export default function AdminBookingDetailsScreen() {
   const [newFare, setNewFare] = useState("");
   const [updatingFare, setUpdatingFare] = useState(false);
   const [calculatingFare, setCalculatingFare] = useState(false);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnReason, setReturnReason] = useState("");
+  const [showPODModal, setShowPODModal] = useState(false);
+  const [podSignature, setPodSignature] = useState("");
+  const [podSignedBy, setPodSignedBy] = useState("");
+  const [savingPOD, setSavingPOD] = useState(false);
+  const [downloadingPOD, setDownloadingPOD] = useState(false);
+  const podReceiptRef = useRef<View>(null);
   const [fareBreakdown, setFareBreakdown] = useState<{
     distanceInKm: number;
     baseFare: number;
@@ -53,6 +66,12 @@ export default function AdminBookingDetailsScreen() {
 
   const handleStatusUpdate = async (newStatus: BookingStatus) => {
     if (!selectedBooking || !id) return;
+
+    // If status is "Returned", show modal to enter return reason
+    if (newStatus === "Returned") {
+      setShowReturnModal(true);
+      return;
+    }
 
     Alert.alert(
       "Update Status",
@@ -76,6 +95,29 @@ export default function AdminBookingDetailsScreen() {
         },
       ]
     );
+  };
+
+  const handleReturnParcel = async () => {
+    if (!selectedBooking || !id || !returnReason.trim()) {
+      Alert.alert("Error", "Please enter a return reason");
+      return;
+    }
+
+    try {
+      setUpdating(true);
+      setShowReturnModal(false);
+      
+      // Call updateStatus with return reason
+      await bookingService.updateBookingStatus(id, "Returned", returnReason);
+      
+      Alert.alert("Success", "Parcel marked as returned");
+      setReturnReason("");
+      await fetchBooking(id);
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to return parcel");
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const handleCalculateFare = async () => {
@@ -260,6 +302,26 @@ export default function AdminBookingDetailsScreen() {
             </View>
           </Card>
 
+          {selectedBooking.returnReason && (
+            <Card style={{ backgroundColor: "#FEF2F2", borderColor: colors.error }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                <Feather name="alert-circle" size={20} color={colors.error} />
+                <Text style={[styles.sectionTitle, { color: colors.error, marginLeft: 8, marginBottom: 0 }]}>
+                  Returned Parcel
+                </Text>
+              </View>
+              <Text style={styles.returnReasonText}>
+                <Text style={{ fontWeight: "600" }}>Reason: </Text>
+                {selectedBooking.returnReason}
+              </Text>
+              {selectedBooking.returnedAt && (
+                <Text style={styles.returnDateText}>
+                  Returned on: {formatDateTime(selectedBooking.returnedAt)}
+                </Text>
+              )}
+            </Card>
+          )}
+
           <Card>
             <Text style={styles.sectionTitle}>Parcel Details</Text>
             <View style={styles.parcelDetails}>
@@ -330,6 +392,51 @@ export default function AdminBookingDetailsScreen() {
               </View>
             </View>
           </Card>
+
+          {/* POD Receipt Section */}
+          {selectedBooking.status === "Delivered" && (
+            <Card>
+              <Text style={styles.sectionTitle}>Proof of Delivery (POD)</Text>
+              {selectedBooking.podSignature ? (
+                <View style={styles.podContainer}>
+                  <View style={styles.podInfo}>
+                    <Text style={styles.podLabel}>Signed by:</Text>
+                    <Text style={styles.podValue}>
+                      {selectedBooking.podSignedBy || "Customer"}
+                    </Text>
+                  </View>
+                  {selectedBooking.podSignedAt && (
+                    <View style={styles.podInfo}>
+                      <Text style={styles.podLabel}>Signed on:</Text>
+                      <Text style={styles.podValue}>
+                        {formatDateTime(selectedBooking.podSignedAt)}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.podButton}
+                    onPress={() => setShowPODModal(true)}
+                  >
+                    <Feather name="printer" size={20} color={colors.primary} />
+                    <Text style={styles.podButtonText}>View/Print POD Receipt</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.podContainer}>
+                  <Text style={styles.podPlaceholder}>
+                    POD receipt not yet generated. Generate it when customer signs for delivery.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.podButton}
+                    onPress={() => setShowPODModal(true)}
+                  >
+                    <Feather name="file-text" size={20} color={colors.primary} />
+                    <Text style={styles.podButtonText}>Generate POD Receipt</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </Card>
+          )}
         </View>
       </ScrollView>
 
@@ -442,6 +549,356 @@ export default function AdminBookingDetailsScreen() {
                   {updatingFare ? "Updating..." : "Update Fare"}
                 </Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Return Parcel Modal */}
+      <Modal
+        visible={showReturnModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowReturnModal(false);
+          setReturnReason("");
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Return Parcel</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowReturnModal(false);
+                  setReturnReason("");
+                }}
+              >
+                <Feather name="x" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.modalDescription}>
+              Please provide a reason for returning this parcel. This information will be shared with the customer.
+            </Text>
+
+            <Input
+              label="Return Reason"
+              value={returnReason}
+              onChangeText={setReturnReason}
+              placeholder="e.g., Wrong address, Customer refused delivery, Damaged package..."
+              multiline
+              numberOfLines={4}
+              style={styles.returnReasonInput}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowReturnModal(false);
+                  setReturnReason("");
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton]}
+                onPress={handleReturnParcel}
+                disabled={updating || !returnReason.trim()}
+              >
+                <Text style={styles.confirmButtonText}>Mark as Returned</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* POD Receipt Modal */}
+      <Modal
+        visible={showPODModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowPODModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.podModalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>POD Receipt</Text>
+              <TouchableOpacity
+                onPress={() => setShowPODModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Feather name="x" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.podScrollView}>
+              <View ref={podReceiptRef} style={styles.podReceipt} collapsable={false}>
+                {/* Company Header */}
+                <View style={styles.podHeader}>
+                  <Text style={styles.podCompanyName}>Parcel Booking</Text>
+                  <Text style={styles.podDocumentTitle}>PROOF OF DELIVERY</Text>
+                </View>
+
+                {/* Booking Details */}
+                <View style={styles.podSection}>
+                  <Text style={styles.podSectionTitle}>Booking Information</Text>
+                  <View style={styles.podRow}>
+                    <Text style={styles.podRowLabel}>Booking ID:</Text>
+                    <Text style={styles.podRowValue}>
+                      {selectedBooking.trackingNumber || selectedBooking.id}
+                    </Text>
+                  </View>
+                  <View style={styles.podRow}>
+                    <Text style={styles.podRowLabel}>Date:</Text>
+                    <Text style={styles.podRowValue}>
+                      {formatDateTime(selectedBooking.createdAt)}
+                    </Text>
+                  </View>
+                  {selectedBooking.deliveryType && (
+                    <View style={styles.podRow}>
+                      <Text style={styles.podRowLabel}>Delivery Type:</Text>
+                      <Text style={styles.podRowValue}>
+                        {selectedBooking.deliveryType === "sameDay" ? "Same Day" : "Scheduled"}
+                      </Text>
+                    </View>
+                  )}
+                  {selectedBooking.deliveryDate && (
+                    <View style={styles.podRow}>
+                      <Text style={styles.podRowLabel}>Scheduled Date:</Text>
+                      <Text style={styles.podRowValue}>
+                        {formatDateTime(selectedBooking.deliveryDate)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Pickup Address */}
+                <View style={styles.podSection}>
+                  <Text style={styles.podSectionTitle}>Pickup Address</Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.pickup.name}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.pickup.address}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.pickup.city}, {selectedBooking.pickup.state} - {selectedBooking.pickup.pincode}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    Phone: {displayPhoneNumber(selectedBooking.pickup.phone)}
+                  </Text>
+                </View>
+
+                {/* Delivery Address */}
+                <View style={styles.podSection}>
+                  <Text style={styles.podSectionTitle}>Delivery Address</Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.drop.name}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.drop.address}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    {selectedBooking.drop.city}, {selectedBooking.drop.state} - {selectedBooking.drop.pincode}
+                  </Text>
+                  <Text style={styles.podAddressText}>
+                    Phone: {displayPhoneNumber(selectedBooking.drop.phone)}
+                  </Text>
+                </View>
+
+                {/* Parcel Details */}
+                <View style={styles.podSection}>
+                  <Text style={styles.podSectionTitle}>Parcel Details</Text>
+                  <View style={styles.podRow}>
+                    <Text style={styles.podRowLabel}>Type:</Text>
+                    <Text style={styles.podRowValue}>
+                      {selectedBooking.parcelDetails.type}
+                    </Text>
+                  </View>
+                  <View style={styles.podRow}>
+                    <Text style={styles.podRowLabel}>Weight:</Text>
+                    <Text style={styles.podRowValue}>
+                      {selectedBooking.parcelDetails.weight} kg
+                    </Text>
+                  </View>
+                  {selectedBooking.fare && (
+                    <View style={styles.podRow}>
+                      <Text style={styles.podRowLabel}>Fare:</Text>
+                      <Text style={styles.podRowValue}>
+                        ₹{selectedBooking.fare.toFixed(0)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Signature Section */}
+                <View style={styles.podSection}>
+                  <Text style={styles.podSectionTitle}>Customer Signature</Text>
+                  {selectedBooking.podSignature ? (
+                    <View style={styles.signatureContainer}>
+                      <Text style={styles.signaturePlaceholder}>
+                        Signature captured
+                      </Text>
+                      <View style={styles.signatureBox}>
+                        <Text style={styles.signatureText}>[Signature Image]</Text>
+                      </View>
+                      <Text style={styles.signatureInfo}>
+                        Signed by: {selectedBooking.podSignedBy || "Customer"}
+                      </Text>
+                      {selectedBooking.podSignedAt && (
+                        <Text style={styles.signatureInfo}>
+                          Date: {formatDateTime(selectedBooking.podSignedAt)}
+                        </Text>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={styles.signatureContainer}>
+                      <Text style={styles.signatureLabel}>Recipient Name:</Text>
+                      <TextInput
+                        style={styles.signatureInput}
+                        value={podSignedBy}
+                        onChangeText={setPodSignedBy}
+                        placeholder="Enter recipient name"
+                        placeholderTextColor={colors.textSecondary}
+                      />
+                      <View style={styles.signatureBox}>
+                        <Text style={styles.signaturePlaceholder}>
+                          Customer signature will be captured here
+                        </Text>
+                        <Text style={styles.signatureHint}>
+                          (Print this receipt for customer to sign)
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+
+                {/* Footer */}
+                <View style={styles.podFooter}>
+                  <Text style={styles.podFooterText}>
+                    This document serves as proof of delivery.
+                  </Text>
+                  <Text style={styles.podFooterText}>
+                    Generated on: {new Date().toLocaleString("en-IN")}
+                  </Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.podModalFooter}>
+              <TouchableOpacity
+                style={[styles.podActionButton, styles.downloadButton]}
+                onPress={async () => {
+                  if (!podReceiptRef.current) {
+                    Alert.alert("Error", "Unable to capture POD receipt");
+                    return;
+                  }
+                  
+                  try {
+                    setDownloadingPOD(true);
+                    
+                    // Capture the POD receipt view as an image
+                    const uri = await captureRef(podReceiptRef, {
+                      format: "png",
+                      quality: 1.0,
+                      result: "tmpfile",
+                    });
+
+                    // Generate filename
+                    const bookingId = selectedBooking.trackingNumber || selectedBooking.id;
+                    const timestamp = new Date().toISOString().split("T")[0];
+                    const filename = `POD_${bookingId}_${timestamp}.png`;
+                    
+                    // Check if sharing is available
+                    const isAvailable = await Sharing.isAvailableAsync();
+                    if (isAvailable) {
+                      // Share directly from the captured URI
+                      await Sharing.shareAsync(uri, {
+                        mimeType: "image/png",
+                        dialogTitle: "Download POD Receipt",
+                        UTI: "public.png",
+                      });
+                      Alert.alert("Success", "POD receipt downloaded successfully");
+                    } else {
+                      // If sharing is not available, save to document directory
+                      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+                      await FileSystem.copyAsync({
+                        from: uri,
+                        to: fileUri,
+                      });
+                      Alert.alert(
+                        "Download Complete",
+                        `POD receipt saved to: ${fileUri}`,
+                        [{ text: "OK" }]
+                      );
+                    }
+                  } catch (error: any) {
+                    console.error("Error downloading POD:", error);
+                    Alert.alert("Error", error.message || "Failed to download POD receipt");
+                  } finally {
+                    setDownloadingPOD(false);
+                  }
+                }}
+                disabled={downloadingPOD}
+              >
+                <Feather name="download" size={20} color={colors.background} />
+                <Text style={styles.podActionButtonText}>
+                  {downloadingPOD ? "Downloading..." : "Download"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.podActionButton, styles.printButton]}
+                onPress={() => {
+                  Alert.alert(
+                    "Print POD",
+                    "To print this receipt, use your device's print functionality or take a screenshot.",
+                    [{ text: "OK" }]
+                  );
+                }}
+              >
+                <Feather name="printer" size={20} color={colors.background} />
+                <Text style={styles.podActionButtonText}>Print</Text>
+              </TouchableOpacity>
+              {!selectedBooking.podSignature && (
+                <TouchableOpacity
+                  style={[styles.podActionButton, styles.saveButton]}
+                  onPress={async () => {
+                    if (!podSignedBy.trim()) {
+                      Alert.alert("Error", "Please enter recipient name");
+                      return;
+                    }
+                    try {
+                      setSavingPOD(true);
+                      // For now, use a placeholder signature (base64 encoded placeholder)
+                      // In production, this would be captured from a signature pad
+                      const placeholderSignature = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+                      await bookingService.updatePODSignature(
+                        id!,
+                        placeholderSignature,
+                        podSignedBy
+                      );
+                      Alert.alert("Success", "POD receipt saved successfully", [
+                        { text: "OK", onPress: () => {
+                          setShowPODModal(false);
+                          fetchBooking(id!);
+                        }},
+                      ]);
+                    } catch (error: any) {
+                      Alert.alert("Error", error.message || "Failed to save POD");
+                    } finally {
+                      setSavingPOD(false);
+                    }
+                  }}
+                  disabled={savingPOD}
+                >
+                  <Feather name="save" size={20} color={colors.background} />
+                  <Text style={styles.podActionButtonText}>
+                    {savingPOD ? "Saving..." : "Save POD"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </View>
@@ -706,6 +1163,255 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   updateButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.background,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  returnReasonInput: {
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  confirmButton: {
+    backgroundColor: colors.error,
+  },
+  confirmButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  modalDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  returnReasonText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  returnDateText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  // POD Styles
+  podContainer: {
+    gap: 12,
+  },
+  podInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  podLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  podValue: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  podButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.primary + "15",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    marginTop: 8,
+  },
+  podButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  podPlaceholder: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 16,
+  },
+  podModalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: "90%",
+    flex: 1,
+  },
+  podScrollView: {
+    flex: 1,
+  },
+  podReceipt: {
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  podHeader: {
+    alignItems: "center",
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+  },
+  podCompanyName: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.primary,
+    marginBottom: 8,
+  },
+  podDocumentTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.text,
+    letterSpacing: 1,
+  },
+  podSection: {
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  podSectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 12,
+    textTransform: "uppercase",
+  },
+  podRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  podRowLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  podRowValue: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 2,
+    textAlign: "right",
+  },
+  podAddressText: {
+    fontSize: 14,
+    color: colors.text,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  signatureContainer: {
+    marginTop: 12,
+  },
+  signatureLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  signatureInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: colors.text,
+    marginBottom: 16,
+    backgroundColor: colors.background,
+  },
+  signatureBox: {
+    minHeight: 120,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: 8,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: colors.surface,
+  },
+  signaturePlaceholder: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: "italic",
+    textAlign: "center",
+  },
+  signatureText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  signatureInfo: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
+    textAlign: "center",
+  },
+  signatureHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  podFooter: {
+    marginTop: 24,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    alignItems: "center",
+  },
+  podFooterText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  podModalFooter: {
+    flexDirection: "row",
+    padding: 20,
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    flexWrap: "wrap",
+  },
+  podActionButton: {
+    flex: 1,
+    minWidth: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  downloadButton: {
+    backgroundColor: colors.info,
+  },
+  printButton: {
+    backgroundColor: colors.primary,
+  },
+  saveButton: {
+    backgroundColor: colors.success,
+  },
+  podActionButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: colors.background,

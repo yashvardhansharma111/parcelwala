@@ -25,10 +25,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       isAuthenticated: !!user,
     }),
   setLoading: (loading) => set({ loading }),
-  logout: () =>
+  logout: () => {
+    // Note: Bookings will be cleared by useBooking hook when user changes
     set({
       user: null,
       isAuthenticated: false,
-    }),
+    });
+  },
 }));
 

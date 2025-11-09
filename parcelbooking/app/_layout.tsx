@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/authStore';
 import { useAuth } from '../hooks/useAuth';
 import { Loader } from '../components/Loader';
 import { View } from 'react-native';
+import { isExpoGo } from '../services/notificationService';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -19,6 +20,57 @@ export default function RootLayout() {
   const { user, isAuthenticated, loading } = useAuthStore();
   const { checkAuthState } = useAuth();
   const [isReady, setIsReady] = useState(false);
+
+  // Set up notification listeners early (before registration)
+  useEffect(() => {
+    // Skip if Expo Go
+    if (isExpoGo()) {
+      return;
+    }
+
+    let receivedSubscription: any = null;
+    let responseSubscription: any = null;
+
+    const setupListeners = async () => {
+      try {
+        const Notifications = await import("expo-notifications");
+        
+        // Listener for when notification is received while app is foregrounded
+        receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+          console.log("🔔 Notification received:", {
+            title: notification.request.content.title,
+            body: notification.request.content.body,
+            data: notification.request.content.data,
+          });
+        });
+
+        // Listener for when user taps on notification
+        responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+          console.log("👆 Notification tapped:", {
+            title: response.notification.request.content.title,
+            body: response.notification.request.content.body,
+            data: response.notification.request.content.data,
+          });
+        });
+
+        console.log("[Notifications] Listeners mounted in _layout.tsx");
+      } catch (error) {
+        console.warn("[Notifications] Failed to set up listeners in _layout:", error);
+      }
+    };
+
+    setupListeners();
+
+    // Cleanup on unmount
+    return () => {
+      if (receivedSubscription) {
+        receivedSubscription.remove();
+      }
+      if (responseSubscription) {
+        responseSubscription.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {

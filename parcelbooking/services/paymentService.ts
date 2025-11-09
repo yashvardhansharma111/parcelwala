@@ -24,27 +24,47 @@ interface PaymentStatusResponse {
 
 /**
  * Create payment page for a booking
+ * For online payments, bookingData is provided and booking will be created after payment success
+ * For existing bookings, bookingId is provided
  */
 export const initiatePayment = async (
-  bookingId: string,
+  bookingId: string | null,
   amount: number,
   customerPhone: string,
   customerName: string,
-  customerEmail: string
+  customerEmail: string,
+  bookingData?: {
+    pickup: any;
+    drop: any;
+    parcelDetails: any;
+    fare: number;
+    couponCode?: string;
+  }
 ): Promise<{ paymentUrl: string; transactionId: string }> => {
   try {
+    const requestBody: any = {
+      customerName,
+      customerEmail,
+      customerMobile: customerPhone,
+    };
+
+    if (bookingId) {
+      // Existing booking
+      requestBody.bookingId = bookingId;
+    } else if (bookingData) {
+      // New booking - will be created after payment success
+      requestBody.bookingData = bookingData;
+    } else {
+      throw new Error("Either bookingId or bookingData is required");
+    }
+
     // apiRequest already extracts the 'data' field from the backend response
     // So response is already the CreatePaymentResponse object
     const response = await apiRequest<CreatePaymentResponse>(
       "/api/payments/create",
       {
         method: "POST",
-        body: JSON.stringify({
-          bookingId,
-          customerName,
-          customerEmail,
-          customerMobile: customerPhone,
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 

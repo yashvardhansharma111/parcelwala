@@ -10,18 +10,36 @@ import { apiRequest } from "./apiClient";
  * Create a new booking
  */
 export const createBooking = async (
-  bookingData: Omit<Booking, "id" | "userId" | "createdAt" | "updatedAt" | "trackingNumber" | "status" | "paymentStatus">
+  bookingData: Omit<Booking, "id" | "userId" | "createdAt" | "updatedAt" | "trackingNumber" | "status" | "paymentStatus"> & {
+    couponCode?: string;
+    deliveryType?: "sameDay" | "later";
+    deliveryDate?: string;
+  }
 ): Promise<Booking> => {
   try {
+    const requestBody: any = {
+      pickup: bookingData.pickup,
+      drop: bookingData.drop,
+      parcelDetails: bookingData.parcelDetails,
+      fare: bookingData.fare,
+      paymentMethod: bookingData.paymentMethod,
+    };
+    
+    if (bookingData.couponCode) {
+      requestBody.couponCode = bookingData.couponCode;
+    }
+    
+    if (bookingData.deliveryType) {
+      requestBody.deliveryType = bookingData.deliveryType;
+    }
+    
+    if (bookingData.deliveryDate) {
+      requestBody.deliveryDate = bookingData.deliveryDate;
+    }
+    
     const response = await apiRequest<{ booking: Booking }>("/bookings", {
       method: "POST",
-      body: JSON.stringify({
-        pickup: bookingData.pickup,
-        drop: bookingData.drop,
-        parcelDetails: bookingData.parcelDetails,
-        fare: bookingData.fare,
-        paymentMethod: bookingData.paymentMethod,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     return response.booking;
@@ -49,40 +67,97 @@ export const getBookingById = async (bookingId: string): Promise<Booking | null>
 };
 
 /**
- * Get all bookings for a user
+ * Get all bookings for a user (with pagination)
  */
-export const getUserBookings = async (): Promise<Booking[]> => {
+export const getUserBookings = async (options?: {
+  limit?: number;
+  lastDocId?: string;
+}): Promise<{
+  bookings: Booking[];
+  hasMore: boolean;
+  lastDocId?: string;
+}> => {
   try {
-    const response = await apiRequest<{ bookings: Booking[] }>("/bookings", {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append("limit", options.limit.toString());
+    if (options?.lastDocId) params.append("lastDocId", options.lastDocId);
+
+    const queryString = params.toString();
+    const endpoint = `/bookings${queryString ? `?${queryString}` : ""}`;
+
+    const response = await apiRequest<{
+      bookings: Booking[];
+      hasMore: boolean;
+      lastDocId?: string;
+    }>(endpoint, {
       method: "GET",
     });
 
-    return response.bookings || [];
+    // Debug logging
+    if (__DEV__) {
+      console.log("[getUserBookings] API Response:", {
+        bookingsCount: response?.bookings?.length || 0,
+        hasMore: response?.hasMore,
+        lastDocId: response?.lastDocId,
+        responseKeys: Object.keys(response || {}),
+        firstBooking: response?.bookings?.[0] ? {
+          id: response.bookings[0].id,
+          status: response.bookings[0].status,
+          userId: response.bookings[0].userId,
+        } : null,
+      });
+    }
+
+    return {
+      bookings: response?.bookings || [],
+      hasMore: response?.hasMore || false,
+      lastDocId: response?.lastDocId,
+    };
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch bookings");
   }
 };
 
 /**
- * Get all bookings (Admin only)
+ * Get all bookings (Admin only) with pagination
  */
-export const getAllBookings = async (filters?: {
-  status?: BookingStatus;
-  paymentStatus?: PaymentStatus;
-}): Promise<Booking[]> => {
+export const getAllBookings = async (
+  filters?: {
+    status?: BookingStatus;
+    paymentStatus?: PaymentStatus;
+  },
+  options?: {
+    limit?: number;
+    lastDocId?: string;
+  }
+): Promise<{
+  bookings: Booking[];
+  hasMore: boolean;
+  lastDocId?: string;
+}> => {
   try {
     const queryParams = new URLSearchParams();
     if (filters?.status) queryParams.append("status", filters.status);
     if (filters?.paymentStatus) queryParams.append("paymentStatus", filters.paymentStatus);
+    if (options?.limit) queryParams.append("limit", options.limit.toString());
+    if (options?.lastDocId) queryParams.append("lastDocId", options.lastDocId);
 
     const queryString = queryParams.toString();
     const endpoint = `/bookings/admin/all${queryString ? `?${queryString}` : ""}`;
 
-    const response = await apiRequest<{ bookings: Booking[] }>(endpoint, {
+    const response = await apiRequest<{
+      bookings: Booking[];
+      hasMore: boolean;
+      lastDocId?: string;
+    }>(endpoint, {
       method: "GET",
     });
 
-    return response.bookings || [];
+    return {
+      bookings: response.bookings || [],
+      hasMore: response.hasMore || false,
+      lastDocId: response.lastDocId,
+    };
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch bookings");
   }
@@ -93,13 +168,24 @@ export const getAllBookings = async (filters?: {
  */
 export const updateBookingStatus = async (
   bookingId: string,
-  status: BookingStatus
-): Promise<void> => {
+  status: BookingStatus,
+  returnReason?: string
+): Promise<Booking> => {
   try {
-    await apiRequest(`/bookings/${bookingId}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    });
+    const body: any = { status };
+    if (returnReason) {
+      body.returnReason = returnReason;
+    }
+
+    const response = await apiRequest<{ booking: Booking }>(
+      `/bookings/${bookingId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }
+    );
+
+    return response.booking;
   } catch (error: any) {
     throw new Error(error.message || "Failed to update booking status");
   }
@@ -119,6 +205,26 @@ export const updatePaymentStatus = async (
     });
   } catch (error: any) {
     throw new Error(error.message || "Failed to update payment status");
+  }
+};
+
+/**
+ * Update POD signature (Admin only)
+ */
+export const updatePODSignature = async (
+  bookingId: string,
+  podSignature: string,
+  podSignedBy: string
+): Promise<Booking> => {
+  try {
+    const response = await apiRequest<{ booking: Booking }>(`/bookings/${bookingId}/pod`, {
+      method: "PATCH",
+      body: JSON.stringify({ podSignature, podSignedBy }),
+    });
+
+    return response.booking;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update POD signature");
   }
 };
 

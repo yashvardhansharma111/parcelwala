@@ -221,19 +221,22 @@ export const authApi = {
    */
   verifyOTP: async (
     phoneNumber: string,
-    otp: string
+    otp: string,
+    name?: string
   ): Promise<{
-    user: User;
-    accessToken: string;
-    refreshToken: string;
+    user?: User;
+    accessToken?: string;
+    refreshToken?: string;
+    requiresName?: boolean;
   }> => {
     return await apiRequest<{
-      user: User;
-      accessToken: string;
-      refreshToken: string;
+      user?: User;
+      accessToken?: string;
+      refreshToken?: string;
+      requiresName?: boolean;
     }>("/auth/verify-otp", {
       method: "POST",
-      body: JSON.stringify({ phoneNumber, otp }),
+      body: JSON.stringify({ phoneNumber, otp, name }),
     });
   },
 
@@ -260,6 +263,34 @@ export const authApi = {
 };
 
 /**
+ * Register and save FCM Token
+ */
+/**
+ * Register OneSignal Player ID with backend
+ */
+export const registerOneSignalPlayerId = async (playerId: string): Promise<void> => {
+  await apiRequest("/user/onesignal-player-id", {
+    method: "POST",
+    body: JSON.stringify({ playerId }),
+  });
+};
+
+/**
+ * @deprecated Use registerOneSignalPlayerId instead
+ */
+export const registerPushToken = async (token: string): Promise<void> => {
+  try {
+    await apiRequest("/user/fcm-token", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  } catch (error: any) {
+    console.error("Error registering FCM token:", error);
+    // Don't throw - push notifications are not critical
+  }
+};
+
+/**
  * User API
  */
 export const userApi = {
@@ -283,6 +314,202 @@ export const adminApi = {
   getDashboard: async (): Promise<any> => {
     return await apiRequest("/admin/dashboard", {
       method: "GET",
+    });
+  },
+
+  /**
+   * Broadcast notification to all users (Super admin only)
+   */
+  broadcastNotification: async (title: string, body: string, data?: any): Promise<{
+    sent: number;
+    failed: number;
+    total: number;
+  }> => {
+    return await apiRequest("/admin/notifications/broadcast", {
+      method: "POST",
+      body: JSON.stringify({ title, body, data }),
+    });
+  },
+
+  /**
+   * Send notification to specific user (Super admin only)
+   */
+  sendNotificationToUser: async (userId: string, title: string, body: string, data?: any): Promise<void> => {
+    return await apiRequest("/admin/notifications/send", {
+      method: "POST",
+      body: JSON.stringify({ userId, title, body, data }),
+    });
+  },
+
+  /**
+   * Get all co-admins (Super admin only)
+   */
+  getCoAdmins: async (): Promise<Array<{
+    id: string;
+    phoneNumber: string;
+    name: string;
+    role: "admin";
+    createdAt: string;
+  }>> => {
+    const response = await apiRequest<{ coAdmins: Array<{
+      id: string;
+      phoneNumber: string;
+      name: string;
+      role: "admin";
+      createdAt: string;
+    }> }>("/admin/co-admins", {
+      method: "GET",
+    });
+    // Backend returns { success: true, data: { coAdmins: [...] } }
+    // apiRequest extracts data, so response is { coAdmins: [...] }
+    // Extract the coAdmins array
+    if (response && typeof response === 'object' && 'coAdmins' in response) {
+      return Array.isArray(response.coAdmins) ? response.coAdmins : [];
+    }
+    // If response is directly an array (fallback)
+    if (Array.isArray(response)) {
+      return response;
+    }
+    console.warn("Unexpected co-admins response structure:", response);
+    return [];
+  },
+
+  /**
+   * Appoint a co-admin (Super admin only)
+   */
+  appointCoAdmin: async (phoneNumber: string, name: string): Promise<{
+    id: string;
+    phoneNumber: string;
+    name: string;
+    role: "admin";
+  }> => {
+    return await apiRequest("/admin/co-admins", {
+      method: "POST",
+      body: JSON.stringify({ phoneNumber, name }),
+    });
+  },
+
+  /**
+   * Remove a co-admin (Super admin only)
+   */
+  removeCoAdmin: async (coAdminId: string): Promise<void> => {
+    return await apiRequest(`/admin/co-admins/${coAdminId}`, {
+      method: "DELETE",
+    });
+  },
+};
+
+/**
+ * Coupon API
+ */
+export const couponApi = {
+  /**
+   * Get all coupons (Admin only) with pagination
+   */
+  getAllCoupons: async (options?: {
+    limit?: number;
+    lastDocId?: string;
+  }): Promise<{
+    coupons: Array<{
+      id: string;
+      code: string;
+      discountType: "percentage" | "fixed";
+      discountValue: number;
+      minOrderAmount?: number;
+      maxDiscountAmount?: number;
+      maxUsage?: number;
+      currentUsage: number;
+      validFrom: string;
+      validUntil: string;
+      isActive: boolean;
+    }>;
+    hasMore: boolean;
+    lastDocId?: string;
+  }> => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append("limit", options.limit.toString());
+    if (options?.lastDocId) params.append("lastDocId", options.lastDocId);
+
+    const queryString = params.toString();
+    const endpoint = `/coupons${queryString ? `?${queryString}` : ""}`;
+
+    const response = await apiRequest<{
+      coupons: Array<{
+        id: string;
+        code: string;
+        discountType: "percentage" | "fixed";
+        discountValue: number;
+        minOrderAmount?: number;
+        maxDiscountAmount?: number;
+        maxUsage?: number;
+        currentUsage: number;
+        validFrom: string;
+        validUntil: string;
+        isActive: boolean;
+      }>;
+      hasMore: boolean;
+      lastDocId?: string;
+    }>(endpoint, {
+      method: "GET",
+    });
+    // Backend returns { success: true, data: { coupons: [...], hasMore, lastDocId } }
+    // apiRequest extracts data, so response is { coupons: [...], hasMore, lastDocId }
+    return {
+      coupons: response.coupons || [],
+      hasMore: response.hasMore || false,
+      lastDocId: response.lastDocId,
+    };
+  },
+
+  /**
+   * Create a coupon (Admin only)
+   */
+  createCoupon: async (couponData: {
+    code: string;
+    discountType: "percentage" | "fixed";
+    discountValue: number;
+    minOrderAmount?: number;
+    maxDiscountAmount?: number;
+    maxUsage?: number;
+    validFrom: string;
+    validUntil: string;
+  }): Promise<{
+    id: string;
+    code: string;
+    discountType: "percentage" | "fixed";
+    discountValue: number;
+  }> => {
+    return await apiRequest("/coupons", {
+      method: "POST",
+      body: JSON.stringify(couponData),
+    });
+  },
+
+  /**
+   * Update a coupon (Admin only)
+   */
+  updateCoupon: async (couponId: string, updates: {
+    discountType?: "percentage" | "fixed";
+    discountValue?: number;
+    minOrderAmount?: number;
+    maxDiscountAmount?: number;
+    maxUsage?: number;
+    validFrom?: string;
+    validUntil?: string;
+    isActive?: boolean;
+  }): Promise<any> => {
+    return await apiRequest(`/coupons/${couponId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a coupon (Admin only)
+   */
+  deleteCoupon: async (couponId: string): Promise<void> => {
+    return await apiRequest(`/coupons/${couponId}`, {
+      method: "DELETE",
     });
   },
 };
@@ -341,16 +568,36 @@ export const mapApi = {
   calculateFare: async (
     pickup: { lat: number; lon: number },
     drop: { lat: number; lon: number },
-    weight: number
+    weight: number,
+    pickupPincode?: string,
+    dropPincode?: string,
+    couponCode?: string,
+    pickupCity?: string,
+    dropCity?: string
   ): Promise<{
     distanceInKm: number;
     baseFare: number;
     gst: number;
     totalFare: number;
+    finalFare?: number;
+    discountAmount?: number;
+    couponApplied?: {
+      code: string;
+      discountAmount: number;
+    };
   }> => {
     return await apiRequest("/map/fare", {
       method: "POST",
-      body: JSON.stringify({ pickup, drop, weight }),
+      body: JSON.stringify({ 
+        pickup, 
+        drop, 
+        weight, 
+        pickupPincode, 
+        dropPincode, 
+        couponCode,
+        pickupCity,
+        dropCity,
+      }),
     });
   },
 
@@ -371,6 +618,109 @@ export const mapApi = {
   }> => {
     return await apiRequest("/map/admin/pricing", {
       method: "GET",
+    });
+  },
+
+  /**
+   * Get all cities (Public endpoint - no auth required)
+   */
+  getCities: async (): Promise<{
+    cities: Array<{
+      id: string;
+      name: string;
+      state?: string;
+      isActive: boolean;
+    }>;
+  }> => {
+    return await apiRequest("/map/cities", {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Create a city (Admin only)
+   */
+  createCity: async (cityData: {
+    name: string;
+    state?: string;
+  }): Promise<{
+    city: {
+      id: string;
+      name: string;
+      state?: string;
+      isActive: boolean;
+    };
+  }> => {
+    return await apiRequest("/admin/cities", {
+      method: "POST",
+      body: JSON.stringify(cityData),
+    });
+  },
+
+  /**
+   * Update a city (Admin only)
+   */
+  updateCity: async (cityId: string, updates: {
+    name?: string;
+    state?: string;
+    isActive?: boolean;
+  }): Promise<any> => {
+    return await apiRequest(`/admin/cities/${cityId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a city (Admin only)
+   */
+  deleteCity: async (cityId: string): Promise<void> => {
+    return await apiRequest(`/admin/cities/${cityId}`, {
+      method: "DELETE",
+    });
+  },
+
+  /**
+   * Get all city routes (Admin only)
+   */
+  getCityRoutes: async (): Promise<{
+    routes: Array<{
+      id: string;
+      fromCity: string;
+      toCity: string;
+      baseFare: number;
+      heavyFare: number;
+      gstPercent: number;
+      isActive: boolean;
+    }>;
+  }> => {
+    return await apiRequest("/admin/cities/routes", {
+      method: "GET",
+    });
+  },
+
+  /**
+   * Create or update city route (Admin only)
+   */
+  upsertCityRoute: async (routeData: {
+    fromCity: string;
+    toCity: string;
+    baseFare: number;
+    heavyFare: number;
+    gstPercent?: number;
+  }): Promise<any> => {
+    return await apiRequest("/admin/cities/routes", {
+      method: "POST",
+      body: JSON.stringify(routeData),
+    });
+  },
+
+  /**
+   * Delete city route (Admin only)
+   */
+  deleteCityRoute: async (routeId: string): Promise<void> => {
+    return await apiRequest(`/admin/cities/routes/${routeId}`, {
+      method: "DELETE",
     });
   },
 

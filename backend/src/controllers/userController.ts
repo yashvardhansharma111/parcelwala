@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import { getUserById } from "../services/userService";
+import { saveFCMToken } from "../services/notificationService";
 import { createError } from "../utils/errorHandler";
 
 /**
@@ -35,6 +36,69 @@ export const getProfile = async (
       data: {
         user: userData,
       },
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+/**
+ * Save OneSignal Player ID for push notifications
+ * POST /user/onesignal-player-id
+ */
+export const saveOneSignalPlayerIdEndpoint = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw createError("User not authenticated", 401);
+    }
+
+    const { playerId } = req.body;
+
+    if (!playerId || typeof playerId !== "string") {
+      throw createError("Player ID is required", 400);
+    }
+
+    await saveFCMToken(req.user.uid, playerId);
+
+    res.status(200).json({
+      success: true,
+      message: "OneSignal Player ID saved successfully",
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+/**
+ * @deprecated Use saveOneSignalPlayerIdEndpoint instead
+ * Save FCM Token for push notifications
+ * POST /user/fcm-token
+ */
+export const saveFCMTokenEndpoint = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw createError("User not authenticated", 401);
+    }
+
+    const { token } = req.body;
+
+    if (!token || typeof token !== "string") {
+      throw createError("FCM Token is required", 400);
+    }
+
+    await saveFCMToken(req.user.uid, token);
+
+    res.status(200).json({
+      success: true,
+      message: "FCM Token saved successfully",
     });
   } catch (error: any) {
     next(error);

@@ -93,15 +93,26 @@ export const getAddressDetails = async (
 export const calculateFare = async (
   pickup: { lat: number; lon: number },
   drop: { lat: number; lon: number },
-  weight: number
+  weight: number,
+  pickupPincode?: string,
+  dropPincode?: string,
+  couponCode?: string,
+  pickupCity?: string,
+  dropCity?: string
 ): Promise<{
   distanceInKm: number;
   baseFare: number;
   gst: number;
   totalFare: number;
+  finalFare?: number;
+  discountAmount?: number;
+  couponApplied?: {
+    code: string;
+    discountAmount: number;
+  };
 }> => {
   try {
-    return await mapApi.calculateFare(pickup, drop, weight);
+    return await mapApi.calculateFare(pickup, drop, weight, pickupPincode, dropPincode, couponCode, pickupCity, dropCity);
   } catch (error: any) {
     console.error("Error calculating fare:", error);
     throw new Error(error.message || "Failed to calculate fare");

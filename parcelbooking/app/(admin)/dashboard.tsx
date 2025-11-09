@@ -14,6 +14,7 @@ import {
   Alert,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useBookingStore } from "../../store/bookingStore";
@@ -35,9 +36,9 @@ export default function AdminDashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { logout } = useAuth();
-  const { bookings, filters, setFilters, clearFilters, loading } =
+  const { bookings, filters, setFilters, clearFilters, loading, loadingMore, hasMore } =
     useBookingStore();
-  const { fetchBookings } = useBooking();
+  const { fetchBookings, loadMoreBookings } = useBooking();
 
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -161,6 +162,13 @@ export default function AdminDashboardScreen() {
         title="Admin Dashboard"
         rightAction={
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push("/(admin)/analytics")}
+              style={styles.settingsButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="bar-chart-2" size={22} color={colors.text} />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push("/(admin)/settings")}
               style={styles.settingsButton}
@@ -289,6 +297,19 @@ export default function AdminDashboardScreen() {
           contentContainerStyle={styles.listContent}
           refreshing={refreshing}
           onRefresh={handleRefresh}
+          onEndReached={() => {
+            if (hasMore && !loadingMore) {
+              loadMoreBookings();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
         />
       )}
 

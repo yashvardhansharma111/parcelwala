@@ -18,7 +18,7 @@ export const createBooking = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.uid;
-    const { pickup, drop, parcelDetails, fare, paymentMethod } = req.body;
+    const { pickup, drop, parcelDetails, fare, paymentMethod, couponCode, deliveryType, deliveryDate } = req.body;
 
     // Validation
     if (!pickup || !drop || !parcelDetails) {
@@ -48,6 +48,9 @@ export const createBooking = async (
       parcelDetails,
       fare,
       paymentMethod,
+      couponCode,
+      deliveryType,
+      deliveryDate,
     });
 
     res.status(201).json({
@@ -104,12 +107,43 @@ export const getUserBookings = async (
 ): Promise<void> => {
   try {
     const userId = req.user!.uid;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+    const lastDocId = req.query.lastDocId as string | undefined;
 
-    const bookings = await bookingService.getUserBookings(userId);
+    // Log for debugging
+    console.log(`[getUserBookings] Fetching bookings for user: ${userId}, limit: ${limit}`);
+
+    const result = await bookingService.getUserBookings(userId, {
+      limit: Math.min(limit, 50), // Max 50 per page
+      lastDocId,
+    });
+
+    // Validate that all bookings belong to this user (security check)
+    const invalidBookings = result.bookings.filter((b) => b.userId !== userId);
+    if (invalidBookings.length > 0) {
+      console.error(`[getUserBookings] SECURITY WARNING: Found ${invalidBookings.length} bookings not belonging to user ${userId}`);
+      // Filter out invalid bookings
+      const validBookings = result.bookings.filter((b) => b.userId === userId);
+      res.json({
+        success: true,
+        data: {
+          bookings: validBookings,
+          hasMore: result.hasMore,
+          lastDocId: validBookings.length > 0 ? validBookings[validBookings.length - 1].id : undefined,
+        },
+      });
+      return;
+    }
+
+    console.log(`[getUserBookings] Returning ${result.bookings.length} bookings for user: ${userId}, hasMore: ${result.hasMore}`);
 
     res.json({
       success: true,
-      data: { bookings },
+      data: {
+        bookings: result.bookings,
+        hasMore: result.hasMore,
+        lastDocId: result.lastDocId,
+      },
     });
   } catch (error: any) {
     next(error);
@@ -126,7 +160,7 @@ export const getAllBookings = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { status, paymentStatus } = req.query;
+    const { status, paymentStatus, limit, lastDocId } = req.query;
 
     const filters: {
       status?: bookingService.BookingStatus;
@@ -141,11 +175,18 @@ export const getAllBookings = async (
       filters.paymentStatus = paymentStatus as bookingService.PaymentStatus;
     }
 
-    const bookings = await bookingService.getAllBookings(filters);
+    const result = await bookingService.getAllBookings(filters, {
+      limit: limit ? Math.min(parseInt(limit as string), 50) : 20, // Max 50 per page
+      lastDocId: lastDocId as string | undefined,
+    });
 
     res.json({
       success: true,
-      data: { bookings },
+      data: {
+        bookings: result.bookings,
+        hasMore: result.hasMore,
+        lastDocId: result.lastDocId,
+      },
     });
   } catch (error: any) {
     next(error);
@@ -163,7 +204,7 @@ export const updateBookingStatus = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, returnReason } = req.body;
     const userId = req.user!.uid;
     const userRole = req.user!.role;
 
@@ -171,9 +212,14 @@ export const updateBookingStatus = async (
       throw createError("Status is required", 400);
     }
 
-    const validStatuses: bookingService.BookingStatus[] = ["Created", "Picked", "Shipped", "Delivered"];
+    const validStatuses: bookingService.BookingStatus[] = ["Created", "Picked", "Shipped", "Delivered", "Returned"];
     if (!validStatuses.includes(status)) {
       throw createError("Invalid status", 400);
+    }
+
+    // If status is "Returned", returnReason is required
+    if (status === "Returned" && !returnReason) {
+      throw createError("Return reason is required for returned parcels", 400);
     }
 
     // Check if booking exists and user has permission
@@ -187,7 +233,7 @@ export const updateBookingStatus = async (
       throw createError("Unauthorized to update booking status", 403);
     }
 
-    await bookingService.updateBookingStatus(id, status);
+    await bookingService.updateBookingStatus(id, status, returnReason);
 
     const updatedBooking = await bookingService.getBookingById(id);
 
@@ -340,6 +386,40 @@ export const updateFare = async (
     res.json({
       success: true,
       data: { booking: updatedBooking },
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+/**
+ * Update POD signature (Admin only)
+ * PATCH /bookings/:id/pod
+ */
+export const updatePODSignature = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { podSignature, podSignedBy } = req.body;
+    const userRole = req.user!.role;
+
+    if (!podSignature || !podSignedBy) {
+      throw createError("POD signature and signed by name are required", 400);
+    }
+
+    // Only admin can update POD signature
+    if (userRole !== "admin") {
+      throw createError("Unauthorized to update POD signature", 403);
+    }
+
+    const booking = await bookingService.updatePODSignature(id, podSignature, podSignedBy);
+
+    res.json({
+      success: true,
+      data: { booking },
     });
   } catch (error: any) {
     next(error);

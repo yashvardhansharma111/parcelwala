@@ -3,7 +3,7 @@
  * Dashboard with booking shortcuts
  */
 
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
@@ -12,9 +12,9 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthStore } from "../../store/authStore";
-import { useBookingStore } from "../../store/bookingStore";
+import { useBooking } from "../../hooks/useBooking";
 import { useAuth } from "../../hooks/useAuth";
 import { Card } from "../../components/Card";
 import { Button } from "../../components/Button";
@@ -30,8 +30,17 @@ import { Alert } from "react-native";
 export default function CustomerHomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { bookings, loading } = useBookingStore();
+  const { bookings, loading, fetchBookings } = useBooking();
   const { logout } = useAuth();
+
+  // Fetch bookings when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchBookings();
+      }
+    }, [user, fetchBookings])
+  );
 
   const handleLogout = () => {
     Alert.alert(
@@ -91,7 +100,7 @@ export default function CustomerHomeScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <Text style={styles.greeting}>
-            Hello, {user?.phoneNumber || "User"}
+            Hi {user?.name || user?.phoneNumber || "User"}
           </Text>
           <Text style={styles.subtitle}>Manage your parcels</Text>
         </View>
@@ -116,7 +125,7 @@ export default function CustomerHomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Bookings</Text>
           {loading ? (
-            <Loader />
+            <Loader color={colors.primary} />
           ) : recentBookings.length === 0 ? (
             <EmptyState
               title="No bookings yet"

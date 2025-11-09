@@ -11,6 +11,7 @@ export default function BookingLayout() {
       <Stack.Screen name="new" options={{ headerShown: false }} />
       <Stack.Screen name="track" options={{ headerShown: false }} />
       <Stack.Screen name="history" options={{ headerShown: false }} />
+      <Stack.Screen name="invoice" options={{ headerShown: false }} />
     </Stack>
   );
 }

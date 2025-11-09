@@ -4,7 +4,9 @@
 
 import { BookingStatus, PaymentStatus } from "./types";
 
-export const ADMIN_PHONE_NUMBER = "+911234567890";
+// Note: This should match ADMIN_PHONE_NUMBER from backend .env
+// The actual value is checked against backend AppCreds.admin.phoneNumber
+export const ADMIN_PHONE_NUMBER = process.env.EXPO_PUBLIC_ADMIN_PHONE_NUMBER || "+911234567890";
 
 export const STATUS_TYPES: BookingStatus[] = [
   "PendingPayment",
@@ -12,6 +14,7 @@ export const STATUS_TYPES: BookingStatus[] = [
   "Picked",
   "Shipped",
   "Delivered",
+  "Returned",
 ];
 
 export const PAYMENT_STATUS_TYPES: PaymentStatus[] = [
@@ -27,6 +30,7 @@ export const STATUS_COLORS: Record<BookingStatus, string> = {
   Picked: "#F59E0B", // Amber
   Shipped: "#8B5CF6", // Purple
   Delivered: "#10B981", // Green
+  Returned: "#EF4444", // Red
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {

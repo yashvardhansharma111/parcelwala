@@ -14,31 +14,44 @@ export const usePayments = () => {
   const [error, setError] = useState<string | null>(null);
 
   const initiatePayment = async (
-    booking: Booking,
+    booking: Booking | null,
     customerPhone: string,
     customerName?: string,
-    customerEmail?: string
+    customerEmail?: string,
+    bookingData?: {
+      pickup: any;
+      drop: any;
+      parcelDetails: any;
+      fare: number;
+      couponCode?: string;
+    }
   ): Promise<{ paymentUrl: string; transactionId: string }> => {
     try {
       setError(null);
       setLoading(true);
 
-      if (!booking.fare) {
+      const fare = booking?.fare || bookingData?.fare;
+      if (!fare || fare <= 0) {
         throw new Error("Booking fare not found");
       }
 
       // Use pickup address name and email if available, otherwise use provided values
-      const name = customerName || booking.pickup.name || "Customer";
+      const name = customerName || booking?.pickup?.name || bookingData?.pickup?.name || "Customer";
       const email = customerEmail || `${customerPhone.replace(/\D/g, "")}@parcelapp.com`;
 
-      console.log("[usePayments] Initiating payment for booking:", booking.id);
+      if (booking) {
+        console.log("[usePayments] Initiating payment for booking:", booking.id);
+      } else {
+        console.log("[usePayments] Initiating payment for new booking (will be created after payment)");
+      }
       
       const result = await paymentService.initiatePayment(
-        booking.id,
-        booking.fare,
+        booking?.id || null,
+        fare,
         customerPhone,
         name,
-        email
+        email,
+        bookingData
       );
 
       console.log("[usePayments] Payment initiated successfully:", {

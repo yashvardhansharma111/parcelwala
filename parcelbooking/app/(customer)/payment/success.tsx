@@ -11,6 +11,7 @@ import { Card } from "../../../components/Card";
 import { colors } from "../../../theme/colors";
 import { Feather } from "@expo/vector-icons";
 import { useBooking } from "../../../hooks/useBooking";
+import { apiRequest } from "../../../services/apiClient";
 
 export default function PaymentSuccessScreen() {
   const router = useRouter();
@@ -23,14 +24,31 @@ export default function PaymentSuccessScreen() {
   const [verifying, setVerifying] = useState(true);
 
   useEffect(() => {
-    // Refresh booking data to get updated payment status
-    if (bookingId) {
-      fetchBooking(bookingId);
+    // If we have merchantRefId but no bookingId, try to get bookingId from backend
+    const fetchBookingFromMerchantRef = async () => {
+      if (merchantRefId && !bookingId) {
+        try {
+          // Call backend to get bookingId from merchantRefId
+          const response = await apiRequest<{ success: boolean; bookingId?: string; message?: string }>(
+            `/payments/success?merchantRefId=${encodeURIComponent(merchantRefId)}`,
+            { method: "GET" }
+          );
+          if (response.success && response.bookingId) {
+            fetchBooking(response.bookingId);
+            // Update URL with bookingId
+            router.setParams({ bookingId: response.bookingId });
+          }
+        } catch (error) {
+          console.error("Error fetching booking from merchantRefId:", error);
+        }
+      } else if (bookingId) {
+        fetchBooking(bookingId);
+      }
       setVerifying(false);
-    } else {
-      setVerifying(false);
-    }
-  }, [bookingId]);
+    };
+
+    fetchBookingFromMerchantRef();
+  }, [bookingId, merchantRefId]);
 
   if (verifying) {
     return (

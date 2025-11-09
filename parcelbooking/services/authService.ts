@@ -38,7 +38,7 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
 /**
  * Verify OTP code
  */
-export const verifyOTP = async (code: string): Promise<User> => {
+export const verifyOTP = async (code: string, name?: string): Promise<{ user: User; requiresName?: boolean } | { requiresName: true }> => {
   try {
     if (!phoneNumberForOTP) {
       throw new Error("No OTP session found. Please request OTP again.");
@@ -48,8 +48,13 @@ export const verifyOTP = async (code: string): Promise<User> => {
       throw new Error("OTP must be 6 digits");
     }
 
-    // Verify OTP with backend
-    const response = await authApi.verifyOTP(phoneNumberForOTP, code);
+    // Verify OTP with backend (name is optional - only required for new users)
+    const response = await authApi.verifyOTP(phoneNumberForOTP, code, name?.trim());
+
+    // If name is required (new user), return the flag
+    if (response.requiresName) {
+      return { requiresName: true };
+    }
 
     // Store tokens and user data
     await setAccessToken(response.accessToken);
@@ -68,7 +73,7 @@ export const verifyOTP = async (code: string): Promise<User> => {
     };
 
     phoneNumberForOTP = null;
-    return userData;
+    return { user: userData };
   } catch (error: any) {
     throw new Error(error.message || "Failed to verify OTP");
   }

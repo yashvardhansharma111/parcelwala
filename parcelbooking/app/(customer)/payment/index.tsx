@@ -9,12 +9,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   AppState,
   Platform,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
+import { Linking } from "react-native";
 import { usePayments } from "../../../hooks/usePayments";
 import { useBooking } from "../../../hooks/useBooking";
 import { useAuthStore } from "../../../store/authStore";
@@ -28,33 +28,114 @@ import * as paymentService from "../../../services/paymentService";
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, bookingData: bookingDataParam } = useLocalSearchParams<{ 
+    id?: string;
+    bookingData?: string;
+  }>();
   const { user } = useAuthStore();
   const { selectedBooking, fetchBooking } = useBooking();
   const { initiatePayment, loading, verifyAndCompletePayment } = usePayments();
   const [processing, setProcessing] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [newBookingData, setNewBookingData] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
+      // Existing booking - fetch it
       fetchBooking(id);
+    } else if (bookingDataParam) {
+      // New booking - parse booking data
+      try {
+        const parsed = JSON.parse(bookingDataParam);
+        setNewBookingData(parsed);
+      } catch (error) {
+        console.error("Error parsing booking data:", error);
+        Alert.alert("Error", "Invalid booking data");
+        router.back();
+      }
     }
-  }, [id]);
+  }, [id, bookingDataParam]);
 
-  // Listen for app state changes as backup (in case browser doesn't trigger close callback)
+  // Listen for app state changes to verify payment when user returns from external browser
   useEffect(() => {
     const subscription = AppState.addEventListener("change", async (nextAppState) => {
       // Only verify if we have transaction ID and user just returned to app
-      if (nextAppState === "active" && transactionId && selectedBooking && !processing) {
-        console.log("[PaymentScreen] App became active, verifying payment...");
+      // For new bookings, we don't have selectedBooking yet, so check transactionId only
+      if (nextAppState === "active" && transactionId && !processing) {
+        console.log("[PaymentScreen] App became active, checking payment status...");
+        
+        // Wait a bit for webhook to process
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
         try {
-          await verifyAndCompletePayment(selectedBooking.id, transactionId);
-          router.push(
-            `/(customer)/payment/success?transactionId=${transactionId}&bookingId=${selectedBooking.id}`
-          );
-          setTransactionId(null); // Clear so we don't verify again
+          // Check payment status first
+          const status = await paymentService.checkPaymentStatus(transactionId);
+          console.log("[PaymentScreen] Payment status:", status);
+          
+          if (status.status === "SUCCESS") {
+            // Payment successful - navigate to success page
+            // For new bookings, bookingId will be extracted from merchantReferenceId in success handler
+            const bookingId = selectedBooking?.id || null;
+            router.push(
+              `/(customer)/payment/success?transactionId=${transactionId}${bookingId ? `&bookingId=${bookingId}` : ""}`
+            );
+            setTransactionId(null);
+          } else if (status.status === "FAILED") {
+            // Payment failed
+            Alert.alert(
+              "Payment Failed",
+              "The payment could not be processed. Please try again.",
+              [
+                {
+                  text: "Try Again",
+                  onPress: () => {
+                    setTransactionId(null);
+                  },
+                },
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => router.push("/(customer)/booking/history"),
+                },
+              ]
+            );
+            setTransactionId(null);
+          } else {
+            // Payment is still pending
+            Alert.alert(
+              "Payment Pending",
+              "Your payment is being processed. We'll update your booking status once the payment is confirmed. You can check your booking status in the bookings section.",
+              [
+                {
+                  text: "Check Bookings",
+                  onPress: () => router.push("/(customer)/booking/history"),
+                },
+                {
+                  text: "OK",
+                  style: "default",
+                },
+              ]
+            );
+            setTransactionId(null);
+          }
         } catch (error: any) {
-          console.log("[PaymentScreen] Payment verification on app resume:", error.message);
+          console.log("[PaymentScreen] Payment verification error:", error.message);
+          // Don't assume success on error - ask user to check status
+          Alert.alert(
+            "Payment Status Unknown",
+            "We couldn't verify your payment status. Please check your bookings or try again.",
+            [
+              {
+                text: "Check Bookings",
+                onPress: () => router.push("/(customer)/booking/history"),
+              },
+              {
+                text: "OK",
+                style: "default",
+              },
+            ]
+          );
+          setTransactionId(null);
         }
       }
     });
@@ -62,28 +143,46 @@ export default function PaymentScreen() {
     return () => {
       subscription.remove();
     };
-  }, [transactionId, selectedBooking, processing]);
+  }, [transactionId, processing]);
 
   const handlePayment = async () => {
-    if (!selectedBooking || !user) {
+    if (!user) {
+      Alert.alert("Error", "User information not found");
+      return;
+    }
+
+    // Check if we have existing booking or new booking data
+    const booking = selectedBooking;
+    const bookingData = newBookingData;
+    
+    if (!booking && !bookingData) {
       Alert.alert("Error", "Booking information not found");
       return;
     }
 
-    if (!selectedBooking.fare) {
+    const fare = booking?.fare || bookingData?.fare;
+    if (!fare || fare <= 0) {
       Alert.alert("Error", "Booking fare not calculated");
       return;
     }
 
     try {
       setProcessing(true);
-      console.log("[PaymentScreen] Starting payment for booking:", selectedBooking.id);
+      
+      if (booking) {
+        // Existing booking
+        console.log("[PaymentScreen] Starting payment for booking:", booking.id);
+      } else {
+        // New booking - will be created after payment success
+        console.log("[PaymentScreen] Starting payment for new booking");
+      }
       
       const paymentResult = await initiatePayment(
-        selectedBooking,
+        booking || null,
         user.phoneNumber,
-        selectedBooking.pickup.name,
-        `${user.phoneNumber.replace(/\D/g, "")}@parcelapp.com`
+        booking?.pickup?.name || bookingData?.pickup?.name || user.name || "Customer",
+        `${user.phoneNumber.replace(/\D/g, "")}@parcelapp.com`,
+        bookingData
       );
 
       console.log("[PaymentScreen] Payment result received:", {
@@ -103,85 +202,33 @@ export default function PaymentScreen() {
       // Store transaction ID for verification when user returns
       setTransactionId(txId);
 
-      console.log("[PaymentScreen] Opening payment URL:", paymentUrl);
+      console.log("[PaymentScreen] Opening payment URL in external browser:", paymentUrl);
       
       try {
-        // Open payment URL in in-app browser (PayGIC UPI payment page)
-        // This allows the user to complete payment and return to the app
-        console.log("[PaymentScreen] Opening WebBrowser with URL:", paymentUrl);
+        // Open payment URL in external browser (PayGIC UPI payment page)
+        const canOpen = await Linking.canOpenURL(paymentUrl);
         
-        const browserResult = await WebBrowser.openBrowserAsync(paymentUrl, {
-          showTitle: true,
-          enableBarCollapsing: false,
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-          ...(Platform.OS === 'ios' && { 
-            controlsColor: colors.primary,
-          }),
-        });
-
-        console.log("[PaymentScreen] Browser closed with result:", browserResult);
-
-        // When browser is dismissed, verify payment status
-        if (txId && selectedBooking) {
-          console.log("[PaymentScreen] Verifying payment after browser close...");
-          
-          try {
-            // Wait a moment for webhook to process payment
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Verify payment status
-            await verifyAndCompletePayment(selectedBooking.id, txId);
-            
-            // Navigate to success screen
-            router.push(
-              `/(customer)/payment/success?transactionId=${txId}&bookingId=${selectedBooking.id}`
-            );
-          } catch (error: any) {
-            console.log("[PaymentScreen] Payment verification:", error.message);
-            
-            // If payment is pending, show message and let user wait or check later
-            if (error.message?.toLowerCase().includes("pending")) {
-              Alert.alert(
-                "Payment Pending",
-                "Your payment is being processed. We'll update your booking status once the payment is confirmed. You can check your booking status in the bookings section.",
-                [
-                  {
-                    text: "Check Bookings",
-                    onPress: () => router.push("/(customer)/booking/history"),
-                  },
-                  {
-                    text: "OK",
-                    style: "default",
-                  },
-                ]
-              );
-            } else if (error.message?.toLowerCase().includes("failed")) {
-              Alert.alert(
-                "Payment Failed",
-                "The payment could not be processed. Please try again.",
-                [
-                  {
-                    text: "Try Again",
-                    onPress: () => {
-                      // User can click Pay Now again
-                    },
-                  },
-                  {
-                    text: "Cancel",
-                    style: "cancel",
-                    onPress: () => router.push("/(customer)/booking/history"),
-                  },
-                ]
-              );
-            } else {
-              // Unknown error - still navigate to success screen
-              // Webhook might have processed it, or user can check status later
-              router.push(
-                `/(customer)/payment/success?transactionId=${txId}&bookingId=${selectedBooking.id}`
-              );
-            }
-          }
+        if (!canOpen) {
+          Alert.alert("Error", "Cannot open payment URL. Please check your browser settings.");
+          setTransactionId(null);
+          return;
         }
+
+        await Linking.openURL(paymentUrl);
+        
+        // Show instruction to user
+        Alert.alert(
+          "Payment Page Opened",
+          "Complete your payment in the browser. Return to the app when done. We'll verify your payment automatically.",
+          [
+            {
+              text: "OK",
+              onPress: () => {
+                // Transaction ID is already set, AppState listener will handle verification
+              },
+            },
+          ]
+        );
       } catch (error: any) {
         console.error("[PaymentScreen] Error opening browser:", error);
         Alert.alert(
@@ -198,14 +245,25 @@ export default function PaymentScreen() {
     }
   };
 
-  if (loading || !selectedBooking) {
+  // Show loading if fetching existing booking or if we don't have booking data yet
+  if (loading || (id && !selectedBooking) || (!id && !newBookingData)) {
     return (
       <View style={styles.container}>
         <Header title="Payment" showBack />
-        <Loader fullScreen />
+        <Loader fullScreen color={colors.primary} />
       </View>
     );
   }
+
+  // Get booking info from either selectedBooking or newBookingData
+  const bookingInfo = selectedBooking || {
+    fare: newBookingData?.fare,
+    pickup: newBookingData?.pickup,
+    drop: newBookingData?.drop,
+    parcelDetails: newBookingData?.parcelDetails,
+    id: "pending",
+    trackingNumber: undefined,
+  };
 
   return (
     <View style={styles.container}>
@@ -214,22 +272,24 @@ export default function PaymentScreen() {
         <View style={styles.content}>
           <Card>
             <Text style={styles.sectionTitle}>Booking Summary</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tracking Number:</Text>
-              <Text style={styles.summaryValue}>
-                {selectedBooking.trackingNumber || `#${selectedBooking.id.slice(0, 8)}`}
-              </Text>
-            </View>
+            {selectedBooking && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Tracking Number:</Text>
+                <Text style={styles.summaryValue}>
+                  {selectedBooking.trackingNumber || `#${selectedBooking.id.slice(0, 8)}`}
+                </Text>
+              </View>
+            )}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Route:</Text>
               <Text style={styles.summaryValue}>
-                {selectedBooking.pickup.city} → {selectedBooking.drop.city}
+                {bookingInfo.pickup?.city || "N/A"} → {bookingInfo.drop?.city || "N/A"}
               </Text>
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Weight:</Text>
               <Text style={styles.summaryValue}>
-                {selectedBooking.parcelDetails.weight} kg
+                {bookingInfo.parcelDetails?.weight || 0} kg
               </Text>
             </View>
           </Card>
@@ -238,7 +298,7 @@ export default function PaymentScreen() {
             <View style={styles.amountSection}>
               <Text style={styles.amountLabel}>Total Amount</Text>
               <Text style={styles.amountValue}>
-                {selectedBooking.fare ? formatCurrency(selectedBooking.fare) : "₹0"}
+                {bookingInfo.fare ? formatCurrency(bookingInfo.fare) : "₹0"}
               </Text>
             </View>
           </Card>
@@ -254,7 +314,7 @@ export default function PaymentScreen() {
             title={processing ? "Processing..." : "Pay Now"}
             onPress={handlePayment}
             loading={processing}
-            disabled={processing || !selectedBooking.fare}
+            disabled={processing || !bookingInfo.fare}
             style={styles.payButton}
           />
         </View>

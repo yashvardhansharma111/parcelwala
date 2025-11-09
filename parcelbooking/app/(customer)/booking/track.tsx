@@ -65,7 +65,7 @@ export default function TrackBookingScreen() {
     return (
       <View style={styles.container}>
         <Header title="Track Parcel" showBack />
-        <Loader fullScreen />
+        <Loader fullScreen color={colors.primary} />
       </View>
     );
   }
@@ -226,8 +226,30 @@ export default function TrackBookingScreen() {
                   </Text>
                 </View>
               )}
+              {selectedBooking.fare && (
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Fare:</Text>
+                  <Text style={[styles.detailValue, styles.fareValue]}>
+                    ₹{selectedBooking.fare.toFixed(0)}
+                  </Text>
+                </View>
+              )}
             </View>
           </Card>
+
+          {/* Invoice Button - Show only if payment is completed */}
+          {selectedBooking.paymentStatus === "paid" && (
+            <Card>
+              <TouchableOpacity
+                style={styles.invoiceButton}
+                onPress={() => router.push(`/(customer)/booking/invoice?id=${selectedBooking.id}`)}
+              >
+                <Feather name="file-text" size={24} color={colors.primary} />
+                <Text style={styles.invoiceButtonText}>View Invoice</Text>
+                <Feather name="chevron-right" size={24} color={colors.primary} />
+              </TouchableOpacity>
+            </Card>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -362,6 +384,29 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 2,
     textAlign: "right",
+  },
+  fareValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  invoiceButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: colors.primary + "10",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  invoiceButtonText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.primary,
+    marginLeft: 12,
   },
 });
 

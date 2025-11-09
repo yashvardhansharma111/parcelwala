@@ -79,62 +79,159 @@ export const calculateBookingFare = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { pickup, drop, weight } = req.body;
-
-    // Validate pickup coordinates
-    if (
-      !pickup ||
-      typeof pickup.lat !== "number" ||
-      typeof pickup.lon !== "number"
-    ) {
-      throw createError("Pickup coordinates (lat, lon) are required", 400);
-    }
-
-    // Validate drop coordinates
-    if (
-      !drop ||
-      typeof drop.lat !== "number" ||
-      typeof drop.lon !== "number"
-    ) {
-      throw createError("Drop coordinates (lat, lon) are required", 400);
-    }
+    const { pickup, drop, weight, pickupPincode, dropPincode, pickupCity, dropCity } = req.body;
 
     // Validate weight
     if (typeof weight !== "number" || weight <= 0) {
       throw createError("Weight must be a positive number", 400);
     }
 
-    // Validate coordinate ranges
-    if (
-      pickup.lat < -90 ||
-      pickup.lat > 90 ||
-      pickup.lon < -180 ||
-      pickup.lon > 180
-    ) {
-      throw createError("Invalid pickup coordinates", 400);
+    // Check if cities are provided and try to get city route pricing
+    if (pickupCity && dropCity) {
+      const { getCityRoute } = await import("../services/cityService");
+      try {
+        // getCityRoute now handles bidirectional matching internally
+        const cityRoute = await getCityRoute(pickupCity.trim(), dropCity.trim());
+
+        if (cityRoute) {
+          console.log(`[Fare Calculation] Found city route: ${pickupCity} -> ${dropCity}, baseFare: ${cityRoute.baseFare}, heavyFare: ${cityRoute.heavyFare}, weight: ${weight}`);
+          // Use city route pricing
+          const gstPercent = cityRoute.gstPercent || 18;
+          let baseFare: number;
+          
+          if (weight <= 3) {
+            baseFare = cityRoute.baseFare;
+          } else if (weight >= 5) {
+            baseFare = cityRoute.heavyFare;
+          } else {
+            // Weight between 3 and 5 kg - use heavy fare (higher tier)
+            baseFare = cityRoute.heavyFare;
+          }
+          
+          const gst = Math.round((baseFare * gstPercent) / 100);
+          const totalFare = baseFare + gst;
+          
+          // Apply coupon if provided
+          let finalFare = totalFare;
+          let discountAmount = 0;
+          let couponApplied = undefined;
+          
+          if (req.body.couponCode) {
+            const { validateCoupon } = await import("../services/couponService");
+            try {
+              const couponResult = await validateCoupon(req.body.couponCode, totalFare);
+              if (couponResult.isValid && couponResult.coupon) {
+                discountAmount = couponResult.discountAmount;
+                finalFare = totalFare - discountAmount;
+                couponApplied = {
+                  code: couponResult.coupon.code,
+                  discountAmount: discountAmount,
+                };
+              }
+            } catch (error) {
+              // Coupon validation failed, ignore
+              console.error("Coupon validation error:", error);
+            }
+          }
+          
+          res.json({
+            success: true,
+            data: {
+              distanceInKm: 0, // Not applicable for fixed route pricing
+              baseFare,
+              gst,
+              totalFare,
+              finalFare,
+              discountAmount,
+              couponApplied,
+            },
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Error getting city route:", error);
+        // Fall through to standard pricing if city route not found
+      }
+    } else {
+      console.log(`[Fare Calculation] No city route check - pickupCity: ${pickupCity}, dropCity: ${dropCity}`);
     }
 
-    if (
-      drop.lat < -90 ||
-      drop.lat > 90 ||
-      drop.lon < -180 ||
-      drop.lon > 180
-    ) {
-      throw createError("Invalid drop coordinates", 400);
+    let distanceInKm: number;
+
+    // Check if pincodes are provided and same - use 0-40km range (use 20km as average)
+    if (pickupPincode && dropPincode && pickupPincode === dropPincode && pickupPincode.length === 6) {
+      distanceInKm = 20; // Use middle of 0-40km range for same pincode
+    } else if (pickup && drop && typeof pickup.lat === "number" && typeof pickup.lon === "number" && typeof drop.lat === "number" && typeof drop.lon === "number") {
+      // Validate coordinate ranges
+      if (
+        pickup.lat < -90 ||
+        pickup.lat > 90 ||
+        pickup.lon < -180 ||
+        pickup.lon > 180
+      ) {
+        throw createError("Invalid pickup coordinates", 400);
+      }
+
+      if (
+        drop.lat < -90 ||
+        drop.lat > 90 ||
+        drop.lon < -180 ||
+        drop.lon > 180
+      ) {
+        throw createError("Invalid drop coordinates", 400);
+      }
+
+      // Calculate distance from coordinates
+      distanceInKm = calculateDistance(
+        { lat: pickup.lat, lon: pickup.lon },
+        { lat: drop.lat, lon: drop.lon }
+      );
+    } else {
+      // If no coordinates and different pincodes, try to calculate from pincode
+      // For now, use a default distance if pincodes are different
+      // TODO: Implement pincode to coordinates lookup for accurate distance
+      if (pickupPincode && dropPincode && pickupPincode !== dropPincode) {
+        // Different pincodes - use a default distance (could be improved with pincode lookup)
+        distanceInKm = 50; // Default distance for different pincodes
+      } else {
+        throw createError("Either coordinates or pincodes are required", 400);
+      }
     }
 
-    // Calculate distance
-    const distanceInKm = calculateDistance(
-      { lat: pickup.lat, lon: pickup.lon },
-      { lat: drop.lat, lon: drop.lon }
-    );
-
-    // Calculate fare
+    // Calculate fare using standard pricing
     const fareCalculation = await calculateFare(distanceInKm, weight);
+    
+    // Apply coupon if provided
+    let finalFare = fareCalculation.totalFare;
+    let discountAmount = 0;
+    let couponApplied = undefined;
+    
+    if (req.body.couponCode) {
+      const { validateCoupon } = await import("../services/couponService");
+      try {
+        const couponResult = await validateCoupon(req.body.couponCode, fareCalculation.totalFare);
+        if (couponResult.isValid && couponResult.coupon) {
+          discountAmount = couponResult.discountAmount;
+          finalFare = fareCalculation.totalFare - discountAmount;
+          couponApplied = {
+            code: couponResult.coupon.code,
+            discountAmount: discountAmount,
+          };
+        }
+      } catch (error) {
+        // Coupon validation failed, ignore
+        console.error("Coupon validation error:", error);
+      }
+    }
 
     res.json({
       success: true,
-      data: fareCalculation,
+      data: {
+        ...fareCalculation,
+        finalFare,
+        discountAmount,
+        couponApplied,
+      },
     });
   } catch (error: any) {
     next(error);

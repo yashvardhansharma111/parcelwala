@@ -18,6 +18,9 @@ export const ENV = {
   // Renflair SMS
   RENFLAIR_API_KEY: process.env.RENFLAIR_API_KEY || "",
   RENFLAIR_API_URL: process.env.RENFLAIR_API_URL || "https://sms.renflair.in/V1.php",
+  // OTP Development Mode: Set to "true" to log OTPs to console instead of sending real SMS
+  // Set to "false" or leave empty to send real SMS (requires RENFLAIR_API_KEY)
+  OTP_DEV_MODE: process.env.OTP_DEV_MODE || "",
 
   // JWT
   JWT_SECRET: process.env.JWT_SECRET || "",
@@ -26,14 +29,22 @@ export const ENV = {
   REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || "7d",
 
   // Admin
-  ADMIN_PHONE_NUMBER: process.env.ADMIN_PHONE_NUMBER || "+911234567890",
+  ADMIN_PHONE_NUMBER: process.env.ADMIN_PHONE_NUMBER || "+918462044151",
 
   // Paygic Payment Gateway
-  PAYGIC_MID: process.env.PAYGIC_MID || "",
-  PAYGIC_TOKEN: process.env.PAYGIC_TOKEN || "",
+  PAYGIC_MID: process.env.PAYGIC_MID || "FINNPAYS",
+  PAYGIC_TOKEN: process.env.PAYGIC_TOKEN || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtaWQiOiJGSU5OUEFZUyIsIl9pZCI6IjY3Njk2MGI0ODJlNTk0MzMyMzYxMTJjOSIsImlhdCI6MTc2MjE4ODY5M30.gNpJsijmfimsXTl4ovIcEpYJ5iRtIwT55KQiCg2_7EU",
   PAYGIC_BASE_URL: process.env.PAYGIC_BASE_URL || "https://server.paygic.in/api/v2",
   PAYGIC_SUCCESS_URL: process.env.PAYGIC_SUCCESS_URL || "",
   PAYGIC_FAILED_URL: process.env.PAYGIC_FAILED_URL || "",
+
+  // OneSignal Push Notifications
+  ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || "",
+  ONESIGNAL_REST_API_KEY: process.env.ONESIGNAL_REST_API_KEY || "",
 };
 
+// Log environment variable status (without exposing sensitive values)
 console.log(`✅ Environment loaded for: ${ENV.NODE_ENV}`);
+console.log(`🔐 Paygic MID configured: ${ENV.PAYGIC_MID ? "Yes" : "No"}`);
+console.log(`🔐 Paygic Token configured: ${ENV.PAYGIC_TOKEN ? "Yes" : "No"}`);
+console.log(`📱 Renflair API Key configured: ${ENV.RENFLAIR_API_KEY ? "Yes" : "No"}`);

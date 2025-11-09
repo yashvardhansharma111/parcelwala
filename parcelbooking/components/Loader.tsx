@@ -15,12 +15,12 @@ interface LoaderProps {
 
 export const Loader: React.FC<LoaderProps> = ({
   size = "large",
-  color = colors.primary,
+  color = colors.primary, // Default to orange
   fullScreen = false,
 }) => {
   return (
     <View style={fullScreen ? styles.fullScreen : styles.container}>
-      <ActivityIndicator size={size} color={color} />
+      <ActivityIndicator size={size} color={color || colors.primary} />
     </View>
   );
 };

@@ -12,8 +12,10 @@ import {
   Platform,
   ScrollView,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
@@ -23,10 +25,12 @@ import { formatPhoneNumber } from "../../utils/formatters";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { sendOTP, verifyOTP, loading, otpSent, error } = useAuth();
+  const { sendOTP, verifyOTP, loading, otpSent, error, resetOTP } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [name, setName] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [needsName, setNeedsName] = useState(false); // New user needs to provide name
 
   const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
@@ -78,10 +82,30 @@ export default function LoginScreen() {
 
     try {
       setOtpError("");
-      await verifyOTP(otpCode);
-      // Navigation handled in useAuth hook
+      const result = await verifyOTP(otpCode);
+      
+      // Check if name is required (new user)
+      if (result.requiresName) {
+        setNeedsName(true);
+      }
+      // Otherwise navigation handled in useAuth hook
     } catch (err: any) {
       setOtpError(err.message || "Invalid OTP");
+    }
+  };
+
+  const handleSubmitName = async () => {
+    if (!name.trim()) {
+      setOtpError("Please enter your name");
+      return;
+    }
+
+    try {
+      setOtpError("");
+      await verifyOTP(otpCode, name.trim());
+      // Navigation handled in useAuth hook
+    } catch (err: any) {
+      setOtpError(err.message || "Failed to complete signup");
     }
   };
 
@@ -102,7 +126,7 @@ export default function LoginScreen() {
               : "Enter your phone number to get started"}
           </Text>
 
-          {!otpSent ? (
+          {!otpSent && !needsName ? (
             <View style={styles.form}>
               <Input
                 label="Phone Number"
@@ -157,9 +181,66 @@ export default function LoginScreen() {
                 loading={loading}
                 style={styles.button}
               />
+
+              <View style={styles.linkContainer}>
+                <Text style={styles.linkText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={() => router.push("/login/signup")}>
+                  <Text style={styles.link}>Sign up</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : needsName ? (
+            <View style={styles.form}>
+              <Text style={styles.subtitle}>
+                Welcome! Please enter your name to complete signup
+              </Text>
+              <Input
+                label="Name"
+                placeholder="Enter your name"
+                value={name}
+                onChangeText={(text) => setName(text)}
+                autoFocus
+              />
+
+              {(error || otpError) && (
+                <Text style={styles.errorText}>{error || otpError}</Text>
+              )}
+
+              <Button
+                title="Complete Signup"
+                onPress={handleSubmitName}
+                loading={loading}
+                style={styles.button}
+              />
+
+              <Button
+                title="Back"
+                variant="outline"
+                onPress={() => {
+                  setNeedsName(false);
+                  setName("");
+                  setOtpError("");
+                }}
+                style={styles.button}
+              />
             </View>
           ) : (
             <View style={styles.form}>
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  setOtpCode("");
+                  setOtpError("");
+                  setPhoneNumber("");
+                  setNeedsName(false);
+                  // Reset OTP sent status to go back to phone input
+                  resetOTP();
+                }}
+              >
+                <Feather name="arrow-left" size={20} color={colors.text} />
+                <Text style={styles.backButtonText}>Back</Text>
+              </TouchableOpacity>
+
               <Input
                 label="Enter OTP"
                 placeholder="000000"
@@ -188,9 +269,13 @@ export default function LoginScreen() {
                 title="Change Phone Number"
                 variant="outline"
                 onPress={() => {
+                  // Reset all local state
                   setOtpCode("");
                   setOtpError("");
                   setPhoneNumber("");
+                  setNeedsName(false);
+                  // Reset OTP sent status from auth hook
+                  resetOTP();
                 }}
                 style={styles.button}
               />
@@ -236,11 +321,38 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
   },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: colors.text,
+    marginLeft: 8,
+    fontWeight: "500",
+  },
   errorText: {
     fontSize: 14,
     color: colors.error,
     marginBottom: 16,
     textAlign: "center",
+  },
+  linkContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  linkText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  link: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: "600",
   },
 });
 

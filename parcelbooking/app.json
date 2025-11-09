@@ -9,9 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ratlam.parcelbooking"
     },
     "android": {
+      "package": "com.ratlam.parcelbooking",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -19,7 +23,11 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "notification": {
+        "icon": "./assets/images/android-icon-foreground.png",
+        "color": "#ffffff"
+      }
     },
     "web": {
       "output": "static",
@@ -27,6 +35,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -43,6 +58,15 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d6c7139a-de05-4408-8edf-5db1e53b983f"
+      },
+      "onesignal": {
+        "appId": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
+      }
     }
   }
 }

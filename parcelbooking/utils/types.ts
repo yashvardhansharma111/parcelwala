@@ -4,13 +4,14 @@
 
 export type UserRole = "admin" | "customer";
 
-export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered";
+export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
 export interface User {
   id: string;
   phoneNumber: string;
+  name?: string;
   role: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +43,8 @@ export interface ParcelDetails {
 
 export type PaymentMethod = "cod" | "online"; // Cash on Delivery or Online Payment
 
+export type DeliveryType = "sameDay" | "later";
+
 export interface Booking {
   id: string;
   userId: string;
@@ -52,6 +55,11 @@ export interface Booking {
   paymentStatus: PaymentStatus;
   paymentMethod?: PaymentMethod;
   fare?: number;
+  deliveryType?: DeliveryType;
+  deliveryDate?: Date | string;
+  podSignature?: string; // Base64 encoded signature image
+  podSignedAt?: Date | string;
+  podSignedBy?: string; // Name of person who signed
   createdAt: Date;
   updatedAt: Date;
   trackingNumber?: string;

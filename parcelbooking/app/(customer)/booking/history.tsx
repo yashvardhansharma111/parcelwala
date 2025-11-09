@@ -3,16 +3,18 @@
  * View all past bookings
  */
 
-import React from "react";
+import React, { useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useBookingStore } from "../../../store/bookingStore";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useBooking } from "../../../hooks/useBooking";
+import { useAuthStore } from "../../../store/authStore";
 import { Card } from "../../../components/Card";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { Header } from "../../../components/Header";
@@ -25,7 +27,17 @@ import { Feather } from "@expo/vector-icons";
 
 export default function BookingHistoryScreen() {
   const router = useRouter();
-  const { bookings, loading } = useBookingStore();
+  const { user } = useAuthStore();
+  const { bookings, loading, loadingMore, hasMore, fetchBookings, loadMoreBookings } = useBooking();
+
+  // Fetch bookings when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchBookings();
+      }
+    }, [user, fetchBookings])
+  );
 
   const renderBookingItem = ({ item }: { item: Booking }) => {
     return (
@@ -61,7 +73,7 @@ export default function BookingHistoryScreen() {
     <View style={styles.container}>
       <Header title="Booking History" showBack />
       {loading ? (
-        <Loader fullScreen />
+        <Loader fullScreen color={colors.primary} />
       ) : bookings.length === 0 ? (
         <EmptyState
           title="No bookings yet"
@@ -74,6 +86,19 @@ export default function BookingHistoryScreen() {
           keyExtractor={(item) => item.id}
           renderItem={renderBookingItem}
           contentContainerStyle={styles.listContent}
+          onEndReached={() => {
+            if (hasMore && !loadingMore) {
+              loadMoreBookings();
+            }
+          }}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : null
+          }
         />
       )}
     </View>
@@ -127,6 +152,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.primary,
+  },
+  footerLoader: {
+    padding: 20,
+    alignItems: "center",
   },
 });
 

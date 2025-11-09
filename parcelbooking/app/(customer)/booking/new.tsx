@@ -1,7 +1,4 @@
-/**
- * New Booking Screen
- * Create a new parcel booking with address autocomplete and fare calculation
- */
+
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -14,8 +11,11 @@ import {
   Platform,
   TouchableOpacity,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { useBooking } from "../../../hooks/useBooking";
 import { useAuthStore } from "../../../store/authStore";
 import { Input } from "../../../components/Input";
@@ -32,6 +32,8 @@ import {
   debounce,
   AddressSuggestion,
 } from "../../../services/addressService";
+import { validateCoupon } from "../../../services/couponService";
+import { mapApi } from "../../../services/apiClient";
 
 export default function NewBookingScreen() {
   const router = useRouter();
@@ -57,8 +59,19 @@ export default function NewBookingScreen() {
     baseFare: number;
     gst: number;
     totalFare: number;
+    finalFare?: number;
+    discountAmount?: number;
+    couponApplied?: {
+      code: string;
+      discountAmount: number;
+    };
   } | null>(null);
   const [loadingFare, setLoadingFare] = useState(false);
+  
+  // Coupon code state
+  const [couponCode, setCouponCode] = useState("");
+  const [couponValidating, setCouponValidating] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const [pickup, setPickup] = useState<Address>({
     name: "",
@@ -66,8 +79,8 @@ export default function NewBookingScreen() {
     houseNumber: "",
     street: "",
     address: "",
-    city: "",
-    state: "",
+    city: "Ratlam", // Default city
+    state: "MP", // Default state
     pincode: "",
     landmark: "",
   });
@@ -78,8 +91,8 @@ export default function NewBookingScreen() {
     houseNumber: "",
     street: "",
     address: "",
-    city: "",
-    state: "",
+    city: "Ratlam", // Default city
+    state: "MP", // Default state
     pincode: "",
     landmark: "",
   });
@@ -91,8 +104,32 @@ export default function NewBookingScreen() {
     value: 0,
   });
 
+  // Track if address was selected from suggestions (mandatory)
+  const [pickupAddressSelected, setPickupAddressSelected] = useState(false);
+  const [dropAddressSelected, setDropAddressSelected] = useState(false);
+
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
+
+  // Delivery type state
+  const [deliveryType, setDeliveryType] = useState<"sameDay" | "later">("sameDay");
+  const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Parcel type dropdown state
+  const [showParcelTypeModal, setShowParcelTypeModal] = useState(false);
+  const parcelTypes = ["Document", "Package", "Electronics", "Fragile", "Other"];
+
+  // City dropdown state
+  const [showPickupCityDropdown, setShowPickupCityDropdown] = useState(false);
+  const [showDropCityDropdown, setShowDropCityDropdown] = useState(false);
+  // Default cities - will be replaced by API data if available
+  const defaultCities = [
+    { id: "1", name: "Ratlam", state: "MP" },
+    { id: "2", name: "Jaora", state: "MP" },
+  ];
+  const [cities, setCities] = useState<Array<{ id: string; name: string; state?: string }>>(defaultCities);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   // Debounced search function for pickup address
   const debouncedPickupSearch = useCallback(
@@ -143,15 +180,53 @@ export default function NewBookingScreen() {
   // Handle pickup address input change
   const handlePickupAddressChange = (text: string) => {
     setPickupSearchQuery(text);
-    updatePickup("address", text);
-    debouncedPickupSearch(text);
+    // Update address state directly - always allow typing
+    setPickup((prev) => ({ ...prev, address: text }));
+    // Reset selected flag if user is typing manually
+    if (pickupAddressSelected) {
+      setPickupAddressSelected(false);
+    }
+    // Hide suggestions if text is cleared
+    if (text.trim().length === 0) {
+      setShowPickupSuggestions(false);
+    } else if (text.trim().length >= 3) {
+      // Only show suggestions if user types 3+ characters
+      debouncedPickupSearch(text);
+    } else {
+      // Hide suggestions if less than 3 characters
+      setShowPickupSuggestions(false);
+    }
   };
 
   // Handle drop address input change
   const handleDropAddressChange = (text: string) => {
     setDropSearchQuery(text);
-    updateDrop("address", text);
-    debouncedDropSearch(text);
+    // Update address state directly - always allow typing
+    setDrop((prev) => ({ ...prev, address: text }));
+    // Reset selected flag if user is typing manually
+    if (dropAddressSelected) {
+      setDropAddressSelected(false);
+    }
+    // Hide suggestions if text is cleared
+    if (text.trim().length === 0) {
+      setShowDropSuggestions(false);
+    } else if (text.trim().length >= 3) {
+      // Only show suggestions if user types 3+ characters
+      debouncedDropSearch(text);
+    } else {
+      // Hide suggestions if less than 3 characters
+      setShowDropSuggestions(false);
+    }
+  };
+
+  // Dismiss pickup suggestions
+  const dismissPickupSuggestions = () => {
+    setShowPickupSuggestions(false);
+  };
+
+  // Dismiss drop suggestions
+  const dismissDropSuggestions = () => {
+    setShowDropSuggestions(false);
   };
 
   // Handle pickup suggestion selection
@@ -162,15 +237,20 @@ export default function NewBookingScreen() {
       
       console.log("[Pickup] Selected suggestion:", suggestion.displayName);
       
-      // Only fill the address field with the full address string
+      // Fill address fields from suggestion
       setPickup((prev) => ({
         ...prev,
-        address: suggestion.displayName, // Use the full display name as address
+        address: suggestion.displayName,
+        city: suggestion.address?.city || "Ratlam",
+        state: suggestion.address?.state || "MP",
+        pincode: suggestion.address?.postcode || prev.pincode,
+        // Don't auto-fill houseNumber with name
+        houseNumber: prev.houseNumber || "",
       }));
 
       // Store coordinates for fare calculation
       setPickupCoordinates(suggestion.coordinates);
-
+      setPickupAddressSelected(true); // Mark as selected
       setPickupSearchQuery("");
     } catch (error: any) {
       console.error("[Pickup] Error selecting suggestion:", error);
@@ -188,15 +268,20 @@ export default function NewBookingScreen() {
       
       console.log("[Drop] Selected suggestion:", suggestion.displayName);
       
-      // Only fill the address field with the full address string
+      // Fill address fields from suggestion
       setDrop((prev) => ({
         ...prev,
-        address: suggestion.displayName, // Use the full display name as address
+        address: suggestion.displayName,
+        city: suggestion.address?.city || "Ratlam",
+        state: suggestion.address?.state || "MP",
+        pincode: suggestion.address?.postcode || prev.pincode,
+        // Don't auto-fill houseNumber with name
+        houseNumber: prev.houseNumber || "",
       }));
 
       // Store coordinates for fare calculation
       setDropCoordinates(suggestion.coordinates);
-
+      setDropAddressSelected(true); // Mark as selected
       setDropSearchQuery("");
     } catch (error: any) {
       console.error("[Drop] Error selecting suggestion:", error);
@@ -209,51 +294,157 @@ export default function NewBookingScreen() {
   // Calculate fare when both addresses and weight are available
   useEffect(() => {
     const calculateFareAsync = async () => {
-      if (
-        pickupCoordinates &&
-        dropCoordinates &&
-        parcelDetails.weight &&
-        parcelDetails.weight > 0
-      ) {
-        setLoadingFare(true);
-        try {
-          const fare = await calculateFare(
-            pickupCoordinates,
-            dropCoordinates,
-            parcelDetails.weight
-          );
-          setFareCalculation(fare);
-        } catch (error: any) {
-          console.error("Error calculating fare:", error);
-          setFareCalculation(null);
-        } finally {
-          setLoadingFare(false);
-        }
-      } else {
+      // Check if we have required fields for fare calculation
+      const hasPickupPincode = pickup.pincode && pickup.pincode.length === 6;
+      const hasDropPincode = drop.pincode && drop.pincode.length === 6;
+      const hasPickupCity = pickup.city && pickup.city.trim().length > 0;
+      const hasDropCity = drop.city && drop.city.trim().length > 0;
+      const hasWeight = parcelDetails.weight && parcelDetails.weight > 0;
+      
+      console.log("[Fare] Calculation check:", {
+        hasWeight,
+        hasPickupCity,
+        hasDropCity,
+        pickupCity: pickup.city,
+        dropCity: drop.city,
+        weight: parcelDetails.weight,
+        hasPickupPincode,
+        hasDropPincode,
+        hasCoordinates: !!(pickupCoordinates && dropCoordinates),
+      });
+      
+      // Need at least weight and both cities to calculate fare
+      if (!hasWeight || !hasPickupCity || !hasDropCity) {
+        console.log("[Fare] Missing required fields, clearing fare");
         setFareCalculation(null);
+        return;
+      }
+
+      // Default coordinates (Ratlam approximate) - will be used if coordinates not available
+      const defaultCoords = { lat: 23.3308, lon: 75.0403 };
+      
+      setLoadingFare(true);
+      try {
+        console.log("[Fare] Calculating fare with:", {
+          pickupCoords: pickupCoordinates || defaultCoords,
+          dropCoords: dropCoordinates || defaultCoords,
+          weight: parcelDetails.weight,
+          pickupPincode: hasPickupPincode ? pickup.pincode : undefined,
+          dropPincode: hasDropPincode ? drop.pincode : undefined,
+          couponCode: couponCode.trim() || undefined,
+          pickupCity: pickup.city,
+          dropCity: drop.city,
+        });
+        
+        // Use coordinates if available, otherwise use default coordinates
+        // The backend will use cities and pincodes for accurate calculation
+        const fare = await calculateFare(
+          pickupCoordinates || defaultCoords,
+          dropCoordinates || defaultCoords,
+          parcelDetails.weight,
+          hasPickupPincode ? pickup.pincode : undefined,
+          hasDropPincode ? drop.pincode : undefined,
+          couponCode.trim() || undefined,
+          pickup.city,
+          drop.city
+        );
+        
+        console.log("[Fare] Calculation result:", fare);
+        setFareCalculation(fare);
+      } catch (error: any) {
+        console.error("[Fare] Error calculating fare:", error);
+        console.error("[Fare] Error details:", error.message, error.stack);
+        setFareCalculation(null);
+      } finally {
+        setLoadingFare(false);
       }
     };
 
     calculateFareAsync();
-  }, [pickupCoordinates, dropCoordinates, parcelDetails.weight]);
+  }, [pickupCoordinates, dropCoordinates, parcelDetails.weight, pickup.pincode, drop.pincode, couponCode, pickup.city, drop.city]);
+
+  // Load cities function
+  const loadCities = useCallback(async () => {
+    try {
+      setLoadingCities(true);
+      console.log("[Cities] Fetching cities from API...");
+      const response = await mapApi.getCities();
+      console.log("[Cities] API response:", response);
+      
+      // The API returns { cities: [...] } after apiRequest unwraps the data
+      const citiesList = response?.cities || [];
+      
+      // If cities are loaded from API, use them; otherwise keep defaults
+      if (Array.isArray(citiesList) && citiesList.length > 0) {
+        // Filter out any invalid cities and ensure all have required fields
+        // Also filter to only show active cities
+        const validCities = citiesList
+          .filter(
+            (city: any) => 
+              city && 
+              typeof city.name === "string" && 
+              city.name.trim().length > 0 &&
+              (city.isActive !== false) // Only show active cities
+          )
+          .map((city: any) => ({
+            id: city.id || city.name,
+            name: city.name.trim(),
+            state: city.state || "MP",
+          }));
+        
+        if (validCities.length > 0) {
+          console.log("[Cities] Loaded", validCities.length, "cities from API:", validCities.map(c => c.name));
+          setCities(validCities);
+        } else {
+          console.log("[Cities] No valid cities found, using defaults");
+          setCities(defaultCities);
+        }
+      } else {
+        console.log("[Cities] API returned empty cities list, using defaults");
+        // Keep default cities if API returns empty
+        setCities(defaultCities);
+      }
+    } catch (error: any) {
+      console.error("[Cities] Error loading cities:", error);
+      console.error("[Cities] Error details:", error.message, error.stack);
+      // Fallback to default cities if API fails
+      setCities(defaultCities);
+    } finally {
+      setLoadingCities(false);
+    }
+  }, []);
+
+  // Load cities on mount and when screen comes into focus
+  useEffect(() => {
+    loadCities();
+  }, [loadCities]);
+
+  // Refresh cities when screen comes into focus (so new cities added by admin appear)
+  useFocusEffect(
+    useCallback(() => {
+      loadCities();
+    }, [loadCities])
+  );
 
   const updatePickup = (field: keyof Address, value: string) => {
     setPickup((prev) => ({ ...prev, [field]: value }));
-    // Clear coordinates if address is manually changed
-    if (field === "address" && value !== pickupSearchQuery) {
-      setPickupCoordinates(null);
+    // If address is manually changed, reset the selected flag
+    if (field === "address" && pickupAddressSelected) {
+      setPickupAddressSelected(false);
     }
   };
 
   const updateDrop = (field: keyof Address, value: string) => {
     setDrop((prev) => ({ ...prev, [field]: value }));
-    // Clear coordinates if address is manually changed
-    if (field === "address" && value !== dropSearchQuery) {
-      setDropCoordinates(null);
+    // If address is manually changed, reset the selected flag
+    if (field === "address" && dropAddressSelected) {
+      setDropAddressSelected(false);
     }
   };
 
   const handleSubmit = async () => {
+    // Validate addresses - allow both selected suggestions and custom addresses
+    // If pincode is available, we can calculate fare by pincode
     const pickupValidation = validateAddress(pickup);
     if (!pickupValidation.isValid) {
       Alert.alert("Validation Error", pickupValidation.errors.join("\n"));
@@ -276,17 +467,26 @@ export default function NewBookingScreen() {
       return;
     }
 
-    try {
-      const booking = await createBooking({
-        pickup,
-        drop,
-        parcelDetails,
-        fare: fareCalculation.totalFare,
-        paymentMethod,
-      });
+    // Validate delivery date if scheduled later
+    if (deliveryType === "later" && !deliveryDate) {
+      Alert.alert("Validation Error", "Please select a delivery date");
+      return;
+    }
 
+    try {
       if (paymentMethod === "cod") {
-        // Cash on Delivery - booking confirmed immediately
+        // Cash on Delivery - create booking immediately
+        const booking = await createBooking({
+          pickup,
+          drop,
+          parcelDetails,
+          fare: fareCalculation.finalFare || fareCalculation.totalFare,
+          paymentMethod,
+          couponCode: fareCalculation.couponApplied?.code || undefined,
+          deliveryType,
+          deliveryDate: deliveryType === "later" && deliveryDate ? deliveryDate.toISOString() : undefined,
+        });
+
         Alert.alert("Success", "Booking created successfully! Pay on delivery.", [
           {
             text: "OK",
@@ -294,22 +494,25 @@ export default function NewBookingScreen() {
           },
         ]);
       } else {
-        // Online payment - booking is PendingPayment, redirect to payment screen
-        Alert.alert(
-          "Booking Created",
-          "Please complete the payment to confirm your booking.",
-          [
-            {
-              text: "Pay Now",
-              onPress: () => router.push(`/(customer)/payment?id=${booking.id}`),
-            },
-            {
-              text: "Cancel",
-              style: "cancel",
-              onPress: () => router.push("/(customer)/booking/history"),
-            },
-          ]
-        );
+        // Online payment - don't create booking yet, pass data to payment screen
+        // Booking will be created only after payment is successful
+        const bookingData = {
+          pickup,
+          drop,
+          parcelDetails,
+          fare: fareCalculation.finalFare || fareCalculation.totalFare,
+          couponCode: fareCalculation.couponApplied?.code || undefined,
+          deliveryType,
+          deliveryDate: deliveryType === "later" && deliveryDate ? deliveryDate.toISOString() : undefined,
+        };
+
+        // Navigate to payment screen with booking data
+        router.push({
+          pathname: "/(customer)/payment",
+          params: {
+            bookingData: JSON.stringify(bookingData),
+          },
+        });
       }
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to create booking");
@@ -317,11 +520,18 @@ export default function NewBookingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <Pressable 
+      style={styles.container}
+      onPress={() => {
+        // Close dropdowns when clicking outside
+        setShowPickupCityDropdown(false);
+        setShowDropCityDropdown(false);
+      }}
+    >
       <Header title="New Booking" showBack />
       <KeyboardAvoidingView
-        style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
       >
         <ScrollView style={styles.scrollView}>
           <View style={styles.content}>
@@ -329,29 +539,46 @@ export default function NewBookingScreen() {
               <Text style={styles.sectionTitle}>Pickup Address</Text>
               <View style={styles.autocompleteContainer}>
                 <Input
-                  label="Address (Start typing to search)"
+                  label="Address (Type to search or enter custom address)"
                   value={pickup.address}
                   onChangeText={handlePickupAddressChange}
-                  placeholder="Type address to search..."
+                  placeholder="Type address to search or enter manually..."
                   multiline
                   numberOfLines={2}
+                  editable={true}
                 />
                 {showPickupSuggestions && pickupSuggestions.length > 0 && (
-                  <View style={styles.suggestionsList}>
-                    {loadingSuggestions && (
+                  <View style={styles.suggestionsListContainer}>
+                    <View style={styles.suggestionsHeader}>
+                      <Text style={styles.suggestionsHeaderText}>Select from suggestions (optional)</Text>
+                      <TouchableOpacity onPress={dismissPickupSuggestions} style={styles.closeButton}>
+                        <Feather name="x" size={18} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                    {loadingSuggestions ? (
                       <View style={styles.loadingContainer}>
                         <ActivityIndicator size="small" color={colors.primary} />
                       </View>
-                    )}
-                    {pickupSuggestions.map((item, index) => (
-                      <TouchableOpacity
-                        key={`${item.displayName}-${index}`}
-                        style={styles.suggestionItem}
-                        onPress={() => handlePickupSuggestionSelect(item)}
+                    ) : (
+                      <ScrollView
+                        style={styles.suggestionsList}
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                        scrollEnabled={true}
                       >
-                        <Text style={styles.suggestionText}>{item.displayName}</Text>
-                      </TouchableOpacity>
-                    ))}
+                        {pickupSuggestions.map((item, index) => (
+                          <TouchableOpacity
+                            key={`pickup-${item.displayName}-${index}`}
+                            style={styles.suggestionItem}
+                            onPress={() => handlePickupSuggestionSelect(item)}
+                          >
+                            <Text style={styles.suggestionText} numberOfLines={2}>
+                              {item.displayName}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    )}
                   </View>
                 )}
               </View>
@@ -395,19 +622,78 @@ export default function NewBookingScreen() {
                 onChangeText={(text) => updatePickup("street", text)}
                 placeholder="e.g., Main Street, MG Road"
               />
-              <Input
-                label="City"
-                value={pickup.city}
-                onChangeText={(text) => updatePickup("city", text)}
-                placeholder="Enter city"
-                editable={!!pickup.address}
-              />
+              <View style={styles.dropdownContainer}>
+                <Text style={styles.label}>City *</Text>
+                <View style={styles.dropdownWrapper}>
+                  <TouchableOpacity
+                    style={styles.dropdownButton}
+                    onPress={() => {
+                      setShowPickupCityDropdown(!showPickupCityDropdown);
+                      setShowDropCityDropdown(false); // Close other dropdown
+                    }}
+                  >
+                    <Text style={[styles.dropdownText, !pickup.city && styles.placeholderText]}>
+                      {pickup.city || "Select city"}
+                    </Text>
+                    <Feather 
+                      name={showPickupCityDropdown ? "chevron-up" : "chevron-down"} 
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                  {showPickupCityDropdown && (
+                    <View style={styles.dropdownList}>
+                      <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 200 }}>
+                        {loadingCities ? (
+                          <View style={styles.dropdownLoading}>
+                            <ActivityIndicator size="small" color={colors.primary} />
+                          </View>
+                        ) : cities && cities.length > 0 ? (
+                          cities.map((city) => {
+                            if (!city || !city.name) return null;
+                            return (
+                              <TouchableOpacity
+                                key={city.id || city.name}
+                                style={[
+                                  styles.dropdownOption,
+                                  pickup.city === city.name && styles.dropdownOptionSelected,
+                                ]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  updatePickup("city", city.name);
+                                  setShowPickupCityDropdown(false);
+                                }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownOptionText,
+                                    pickup.city === city.name && styles.dropdownOptionTextSelected,
+                                  ]}
+                                >
+                                  {city.name || ""}
+                                </Text>
+                                {pickup.city === city.name && (
+                                  <Feather name="check" size={16} color={colors.primary} />
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })
+                        ) : (
+                          <View style={styles.dropdownLoading}>
+                            <Text style={styles.dropdownOptionText}>No cities available</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
               <Input
                 label="State"
                 value={pickup.state}
                 onChangeText={(text) => updatePickup("state", text)}
                 placeholder="Enter state"
-                editable={!!pickup.address}
+                editable={true}
               />
               <Input
                 label="PIN Code"
@@ -416,7 +702,7 @@ export default function NewBookingScreen() {
                 placeholder="123456"
                 keyboardType="number-pad"
                 maxLength={6}
-                editable={!!pickup.address}
+                editable={true}
               />
               <Input
                 label="Landmark (Optional)"
@@ -430,29 +716,46 @@ export default function NewBookingScreen() {
               <Text style={styles.sectionTitle}>Delivery Address</Text>
               <View style={styles.autocompleteContainer}>
                 <Input
-                  label="Address (Start typing to search)"
+                  label="Address (Type to search or enter custom address)"
                   value={drop.address}
                   onChangeText={handleDropAddressChange}
-                  placeholder="Type address to search..."
+                  placeholder="Type address to search or enter manually..."
                   multiline
                   numberOfLines={2}
+                  editable={true}
                 />
                 {showDropSuggestions && dropSuggestions.length > 0 && (
-                  <View style={styles.suggestionsList}>
-                    {loadingSuggestions && (
+                  <View style={styles.suggestionsListContainer}>
+                    <View style={styles.suggestionsHeader}>
+                      <Text style={styles.suggestionsHeaderText}>Select from suggestions (optional)</Text>
+                      <TouchableOpacity onPress={dismissDropSuggestions} style={styles.closeButton}>
+                        <Feather name="x" size={18} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                    </View>
+                    {loadingSuggestions ? (
                       <View style={styles.loadingContainer}>
                         <ActivityIndicator size="small" color={colors.primary} />
                       </View>
-                    )}
-                    {dropSuggestions.map((item, index) => (
-                      <TouchableOpacity
-                        key={`${item.displayName}-${index}`}
-                        style={styles.suggestionItem}
-                        onPress={() => handleDropSuggestionSelect(item)}
+                    ) : (
+                      <ScrollView
+                        style={styles.suggestionsList}
+                        nestedScrollEnabled={true}
+                        keyboardShouldPersistTaps="handled"
+                        scrollEnabled={true}
                       >
-                        <Text style={styles.suggestionText}>{item.displayName}</Text>
-                      </TouchableOpacity>
-                    ))}
+                        {dropSuggestions.map((item, index) => (
+                          <TouchableOpacity
+                            key={`drop-${item.displayName}-${index}`}
+                            style={styles.suggestionItem}
+                            onPress={() => handleDropSuggestionSelect(item)}
+                          >
+                            <Text style={styles.suggestionText} numberOfLines={2}>
+                              {item.displayName}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    )}
                   </View>
                 )}
               </View>
@@ -496,19 +799,79 @@ export default function NewBookingScreen() {
                 onChangeText={(text) => updateDrop("street", text)}
                 placeholder="e.g., Main Street, MG Road"
               />
-              <Input
-                label="City"
-                value={drop.city}
-                onChangeText={(text) => updateDrop("city", text)}
-                placeholder="Enter city"
-                editable={!!drop.address}
-              />
+              <View style={styles.dropdownContainer}>
+                <Text style={styles.label}>City *</Text>
+                <View style={styles.dropdownWrapper}>
+                  <TouchableOpacity
+                    style={styles.dropdownButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowDropCityDropdown(!showDropCityDropdown);
+                      setShowPickupCityDropdown(false); // Close other dropdown
+                    }}
+                  >
+                    <Text style={[styles.dropdownText, !drop.city && styles.placeholderText]}>
+                      {drop.city || "Select city"}
+                    </Text>
+                    <Feather 
+                      name={showDropCityDropdown ? "chevron-up" : "chevron-down"} 
+                      size={20} 
+                      color={colors.textSecondary} 
+                    />
+                  </TouchableOpacity>
+                  {showDropCityDropdown && (
+                    <View style={styles.dropdownList}>
+                      <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 200 }}>
+                        {loadingCities ? (
+                          <View style={styles.dropdownLoading}>
+                            <ActivityIndicator size="small" color={colors.primary} />
+                          </View>
+                        ) : cities && cities.length > 0 ? (
+                          cities.map((city) => {
+                            if (!city || !city.name) return null;
+                            return (
+                              <TouchableOpacity
+                                key={city.id || city.name}
+                                style={[
+                                  styles.dropdownOption,
+                                  drop.city === city.name && styles.dropdownOptionSelected,
+                                ]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  updateDrop("city", city.name);
+                                  setShowDropCityDropdown(false);
+                                }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.dropdownOptionText,
+                                    drop.city === city.name && styles.dropdownOptionTextSelected,
+                                  ]}
+                                >
+                                  {city.name || ""}
+                                </Text>
+                                {drop.city === city.name && (
+                                  <Feather name="check" size={16} color={colors.primary} />
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })
+                        ) : (
+                          <View style={styles.dropdownLoading}>
+                            <Text style={styles.dropdownOptionText}>No cities available</Text>
+                          </View>
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
               <Input
                 label="State"
                 value={drop.state}
                 onChangeText={(text) => updateDrop("state", text)}
                 placeholder="Enter state"
-                editable={!!drop.address}
+                editable={true}
               />
               <Input
                 label="PIN Code"
@@ -517,7 +880,7 @@ export default function NewBookingScreen() {
                 placeholder="123456"
                 keyboardType="number-pad"
                 maxLength={6}
-                editable={!!drop.address}
+                editable={true}
               />
               <Input
                 label="Landmark (Optional)"
@@ -529,14 +892,49 @@ export default function NewBookingScreen() {
 
             <Card>
               <Text style={styles.sectionTitle}>Parcel Details</Text>
-              <Input
-                label="Parcel Type"
-                value={parcelDetails.type}
-                onChangeText={(text) =>
-                  setParcelDetails((prev) => ({ ...prev, type: text }))
-                }
-                placeholder="e.g., Document, Package, Electronics"
-              />
+              <View style={styles.container}>
+                <Text style={styles.label}>Parcel Type *</Text>
+                <TouchableOpacity
+                  style={styles.dropdownButton}
+                  onPress={() => setShowParcelTypeModal(true)}
+                >
+                  <Text style={[styles.dropdownText, !parcelDetails.type && styles.placeholderText]}>
+                    {parcelDetails.type || "Select parcel type"}
+                  </Text>
+                  <Feather name="chevron-down" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <Modal
+                visible={showParcelTypeModal}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setShowParcelTypeModal(false)}
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowParcelTypeModal(false)}
+                >
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalTitle}>Select Parcel Type</Text>
+                    {parcelTypes.map((type) => (
+                      <TouchableOpacity
+                        key={type}
+                        style={styles.modalOption}
+                        onPress={() => {
+                          setParcelDetails((prev) => ({ ...prev, type }));
+                          setShowParcelTypeModal(false);
+                        }}
+                      >
+                        <Text style={styles.modalOptionText}>{type}</Text>
+                        {parcelDetails.type === type && (
+                          <Feather name="check" size={20} color={colors.primary} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </TouchableOpacity>
+              </Modal>
               <Input
                 label="Weight (kg)"
                 value={parcelDetails.weight?.toString() || ""}
@@ -579,24 +977,311 @@ export default function NewBookingScreen() {
                 <Text style={styles.sectionTitle}>Estimated Fare</Text>
                 <View style={styles.fareRow}>
                   <Text style={styles.fareLabel}>Distance:</Text>
-                  <Text style={styles.fareValue}>{fareCalculation.distanceInKm} km</Text>
+                  <Text style={styles.fareValue}>
+                    {fareCalculation.distanceInKm != null ? `${fareCalculation.distanceInKm} km` : "0 km"}
+                  </Text>
                 </View>
                 <View style={styles.fareRow}>
                   <Text style={styles.fareLabel}>Base Fare:</Text>
-                  <Text style={styles.fareValue}>₹{fareCalculation.baseFare}</Text>
+                  <Text style={styles.fareValue}>
+                    ₹{fareCalculation.baseFare != null ? fareCalculation.baseFare : 0}
+                  </Text>
                 </View>
-                {fareCalculation.gst > 0 && (
+                {fareCalculation.gst != null && fareCalculation.gst > 0 && (
                   <View style={styles.fareRow}>
                     <Text style={styles.fareLabel}>GST:</Text>
                     <Text style={styles.fareValue}>₹{fareCalculation.gst}</Text>
                   </View>
                 )}
+                {fareCalculation.discountAmount != null && fareCalculation.discountAmount > 0 && (
+                  <View style={styles.fareRow}>
+                    <Text style={[styles.fareLabel, { color: colors.success }]}>
+                      Discount{fareCalculation.couponApplied?.code ? ` (${fareCalculation.couponApplied.code})` : ""}:
+                    </Text>
+                    <Text style={[styles.fareValue, { color: colors.success, fontWeight: "600" }]}>
+                      -₹{fareCalculation.discountAmount}
+                    </Text>
+                  </View>
+                )}
                 <View style={[styles.fareRow, styles.totalFareRow]}>
                   <Text style={styles.totalFareLabel}>Total Fare:</Text>
-                  <Text style={styles.totalFareValue}>₹{fareCalculation.totalFare}</Text>
+                  <Text style={styles.totalFareValue}>
+                    ₹{fareCalculation.finalFare != null ? fareCalculation.finalFare : (fareCalculation.totalFare != null ? fareCalculation.totalFare : 0)}
+                  </Text>
                 </View>
                 {loadingFare && (
                   <ActivityIndicator size="small" color={colors.primary} style={styles.fareLoading} />
+                )}
+              </Card>
+            )}
+
+            {/* Coupon Code Section */}
+            {fareCalculation && (
+              <Card>
+                <Text style={styles.sectionTitle}>Coupon Code (Optional)</Text>
+                <View style={styles.couponContainer}>
+                  <Input
+                    label="Enter Coupon Code"
+                    value={couponCode}
+                    onChangeText={(text) => {
+                      setCouponCode(text.toUpperCase());
+                      setCouponError(null);
+                    }}
+                    placeholder="COUPON123"
+                    autoCapitalize="characters"
+                    editable={!couponValidating}
+                  />
+                  {couponError && (
+                    <Text style={styles.couponError}>{couponError}</Text>
+                  )}
+                  {fareCalculation.couponApplied && (
+                    <View style={styles.couponApplied}>
+                      <Feather name="check-circle" size={16} color={colors.success} />
+                      <Text style={styles.couponAppliedText}>
+                        Coupon {fareCalculation.couponApplied?.code || ""} applied! 
+                        Save ₹{fareCalculation.discountAmount != null ? fareCalculation.discountAmount : 0}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.applyCouponButton}
+                    onPress={async () => {
+                      if (!couponCode.trim()) {
+                        setCouponError("Please enter a coupon code");
+                        return;
+                      }
+                      if (!fareCalculation || !fareCalculation.totalFare) {
+                        setCouponError("Please wait for fare calculation");
+                        return;
+                      }
+                      setCouponValidating(true);
+                      setCouponError(null);
+                      try {
+                        // Recalculate fare with coupon code
+                        const hasPickupPincode = pickup.pincode && pickup.pincode.length === 6;
+                        const hasDropPincode = drop.pincode && drop.pincode.length === 6;
+                        
+                        let fare;
+                        if (hasPickupPincode && hasDropPincode && pickup.pincode === drop.pincode) {
+                          fare = await calculateFare(
+                            pickupCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            dropCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            parcelDetails.weight,
+                            pickup.pincode,
+                            drop.pincode,
+                            couponCode.trim()
+                          );
+                        } else if (pickupCoordinates && dropCoordinates) {
+                          fare = await calculateFare(
+                            pickupCoordinates,
+                            dropCoordinates,
+                            parcelDetails.weight,
+                            pickup.pincode || undefined,
+                            drop.pincode || undefined,
+                            couponCode.trim()
+                          );
+                        } else {
+                          setCouponError("Please complete address details first");
+                          return;
+                        }
+                        
+                        if (fare.couponApplied) {
+                          setFareCalculation(fare);
+                          setCouponError(null);
+                        } else {
+                          setCouponError("Invalid or expired coupon code");
+                          // Reset fare calculation to original
+                          const originalFare = await calculateFare(
+                            pickupCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            dropCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            parcelDetails.weight,
+                            pickup.pincode,
+                            drop.pincode
+                          );
+                          setFareCalculation(originalFare);
+                        }
+                      } catch (error: any) {
+                        setCouponError(error.message || "Failed to validate coupon");
+                      } finally {
+                        setCouponValidating(false);
+                      }
+                    }}
+                    disabled={couponValidating || !couponCode.trim()}
+                  >
+                    {couponValidating ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <Text style={styles.applyCouponButtonText}>Apply Coupon</Text>
+                    )}
+                  </TouchableOpacity>
+                  {fareCalculation.couponApplied && (
+                    <TouchableOpacity
+                      style={styles.removeCouponButton}
+                      onPress={async () => {
+                        setCouponCode("");
+                        setCouponError(null);
+                        // Recalculate fare without coupon
+                        const hasPickupPincode = pickup.pincode && pickup.pincode.length === 6;
+                        const hasDropPincode = drop.pincode && drop.pincode.length === 6;
+                        
+                        let fare;
+                        if (hasPickupPincode && hasDropPincode && pickup.pincode === drop.pincode) {
+                          fare = await calculateFare(
+                            pickupCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            dropCoordinates || { lat: 23.3308, lon: 75.0403 },
+                            parcelDetails.weight,
+                            pickup.pincode,
+                            drop.pincode,
+                            undefined,
+                            pickup.city,
+                            drop.city
+                          );
+                        } else if (pickupCoordinates && dropCoordinates) {
+                          fare = await calculateFare(
+                            pickupCoordinates,
+                            dropCoordinates,
+                            parcelDetails.weight,
+                            pickup.pincode || undefined,
+                            drop.pincode || undefined,
+                            undefined,
+                            pickup.city,
+                            drop.city
+                          );
+                        }
+                        if (fare) {
+                          setFareCalculation(fare);
+                        }
+                      }}
+                    >
+                      <Text style={styles.removeCouponButtonText}>Remove Coupon</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Card>
+            )}
+
+            {/* Delivery Date Selection */}
+            {fareCalculation && (
+              <Card>
+                <Text style={styles.sectionTitle}>Delivery Option</Text>
+                <View style={styles.deliveryOptionContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.deliveryOption,
+                      deliveryType === "sameDay" && styles.deliveryOptionSelected,
+                    ]}
+                    onPress={() => {
+                      setDeliveryType("sameDay");
+                      setDeliveryDate(null);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.deliveryOptionText,
+                        deliveryType === "sameDay" && styles.deliveryOptionTextSelected,
+                      ]}
+                    >
+                      Same Day Delivery
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.deliveryOption,
+                      deliveryType === "later" && styles.deliveryOptionSelected,
+                    ]}
+                    onPress={() => setDeliveryType("later")}
+                  >
+                    <Text
+                      style={[
+                        styles.deliveryOptionText,
+                        deliveryType === "later" && styles.deliveryOptionTextSelected,
+                      ]}
+                    >
+                      Schedule Later
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {deliveryType === "later" && (
+                  <View style={styles.datePickerContainer}>
+                    <Text style={styles.label}>Select Delivery Date</Text>
+                    <TouchableOpacity
+                      style={styles.datePickerButton}
+                      onPress={() => setShowDatePicker(true)}
+                    >
+                      <Text style={styles.datePickerText}>
+                        {deliveryDate
+                          ? new Date(deliveryDate).toLocaleDateString("en-IN", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : "Select date"}
+                      </Text>
+                      <Feather name="calendar" size={20} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                )}
+                {showDatePicker && (
+                  <Modal
+                    visible={showDatePicker}
+                    transparent
+                    animationType="slide"
+                    onRequestClose={() => setShowDatePicker(false)}
+                  >
+                    <View style={styles.modalOverlay}>
+                      <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Select Delivery Date</Text>
+                        <View style={styles.dateInputContainer}>
+                          <Input
+                            label="Date"
+                            value={
+                              deliveryDate
+                                ? new Date(deliveryDate).toISOString().split("T")[0]
+                                : ""
+                            }
+                            onChangeText={(text) => {
+                              if (text) {
+                                const date = new Date(text);
+                                if (!isNaN(date.getTime())) {
+                                  setDeliveryDate(date);
+                                }
+                              }
+                            }}
+                            placeholder="YYYY-MM-DD"
+                            keyboardType="default"
+                          />
+                          <Text style={styles.dateHint}>
+                            Format: YYYY-MM-DD (e.g., 2024-12-25)
+                          </Text>
+                        </View>
+                        <View style={styles.modalButtons}>
+                          <TouchableOpacity
+                            style={[styles.modalButton, styles.modalButtonCancel]}
+                            onPress={() => {
+                              setShowDatePicker(false);
+                            }}
+                          >
+                            <Text style={styles.modalButtonText}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.modalButton, styles.modalButtonConfirm]}
+                            onPress={() => {
+                              if (!deliveryDate) {
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setDeliveryDate(tomorrow);
+                              }
+                              setShowDatePicker(false);
+                            }}
+                          >
+                            <Text style={[styles.modalButtonText, { color: colors.primary }]}>
+                              Confirm
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </Modal>
                 )}
               </Card>
             )}
@@ -651,7 +1336,7 @@ export default function NewBookingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </Pressable>
   );
 }
 
@@ -676,26 +1361,43 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   autocompleteContainer: {
-    position: "relative",
-    zIndex: 10,
+    marginBottom: 8,
   },
-  suggestionsList: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
+  suggestionsListContainer: {
     backgroundColor: colors.background,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: 4,
+    marginTop: 8,
+    marginBottom: 16,
     maxHeight: 200,
-    zIndex: 1000,
-    elevation: 5,
+    overflow: "hidden",
+    elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  suggestionsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  suggestionsHeaderText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: "500",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  suggestionsList: {
+    maxHeight: 160,
   },
   suggestionItem: {
     padding: 12,
@@ -777,8 +1479,246 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: "600",
   },
+  deliveryOptionContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  deliveryOption: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}15`,
+  },
+  deliveryOptionText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.text,
+  },
+  deliveryOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  datePickerContainer: {
+    marginTop: 16,
+  },
+  datePickerButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+    marginTop: 8,
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  dateInputContainer: {
+    marginTop: 16,
+  },
+  dateHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 20,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 100,
+    alignItems: "center",
+  },
+  modalButtonCancel: {
+    backgroundColor: colors.border,
+  },
+  modalButtonConfirm: {
+    backgroundColor: colors.primary + "15",
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
   submitButton: {
     marginTop: 24,
     marginBottom: 32,
+  },
+  readOnlyInput: {
+    backgroundColor: colors.border + "40",
+    opacity: 0.7,
+  },
+  dropdownContainer: {
+    marginBottom: 16,
+  },
+  dropdownWrapper: {
+    position: "relative",
+    zIndex: 1,
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: colors.background,
+  },
+  dropdownText: {
+    fontSize: 16,
+    color: colors.text,
+    flex: 1,
+  },
+  placeholderText: {
+    color: colors.textLight,
+  },
+  dropdownList: {
+    position: "absolute",
+    top: "100%",
+    left: 0,
+    right: 0,
+    marginTop: 4,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    maxHeight: 200,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  dropdownLoading: {
+    padding: 16,
+    alignItems: "center",
+  },
+  dropdownOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  dropdownOptionSelected: {
+    backgroundColor: colors.primary + "10",
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  dropdownOptionTextSelected: {
+    color: colors.primary,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: "50%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.text,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  modalOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: colors.text,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  couponContainer: {
+    gap: 12,
+  },
+  couponError: {
+    fontSize: 12,
+    color: colors.error,
+    marginTop: -8,
+  },
+  couponApplied: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    backgroundColor: colors.success + "10",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  couponAppliedText: {
+    fontSize: 14,
+    color: colors.success,
+    fontWeight: "500",
+  },
+  applyCouponButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+  },
+  applyCouponButtonText: {
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  removeCouponButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  removeCouponButtonText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: "500",
   },
 });

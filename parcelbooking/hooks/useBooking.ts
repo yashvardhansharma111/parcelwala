@@ -15,34 +15,65 @@ export const useBooking = () => {
     bookings,
     selectedBooking,
     loading,
+    loadingMore,
+    hasMore,
+    lastDocId,
     setBookings,
+    appendBookings,
     addBooking,
     updateBooking,
     setSelectedBooking,
     setLoading,
+    setLoadingMore,
+    setPagination,
   } = useBookingStore();
 
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Fetch bookings from backend API
+   * Fetch bookings from backend API (with pagination support)
    */
-  const fetchBookings = useCallback(async () => {
+  const fetchBookings = useCallback(async (options?: {
+    limit?: number;
+    lastDocId?: string;
+    append?: boolean;
+  }) => {
     if (!user) return;
 
     try {
       setError(null);
-      setLoading(true);
-
-      let bookingsData: Booking[];
-
-      if (user.role === "admin") {
-        bookingsData = await bookingService.getAllBookings();
-      } else {
-        bookingsData = await bookingService.getUserBookings();
+      if (!options?.append) {
+        setLoading(true);
       }
 
-      setBookings(bookingsData);
+      let result: {
+        bookings: Booking[];
+        hasMore: boolean;
+        lastDocId?: string;
+      };
+
+      if (user.role === "admin") {
+        result = await bookingService.getAllBookings(undefined, {
+          limit: options?.limit || 20,
+          lastDocId: options?.lastDocId,
+        });
+      } else {
+        result = await bookingService.getUserBookings({
+          limit: options?.limit || 20,
+          lastDocId: options?.lastDocId,
+        });
+      }
+
+      if (options?.append) {
+        // Append to existing bookings
+        appendBookings(result.bookings);
+      } else {
+        // Replace existing bookings
+        setBookings(result.bookings);
+      }
+      
+      // Update pagination state
+      setPagination(result.hasMore, result.lastDocId);
     } catch (error: any) {
       setError(error.message || "Failed to fetch bookings");
       console.error("Error fetching bookings:", error);
@@ -51,18 +82,31 @@ export const useBooking = () => {
     }
   }, [user, setBookings, setLoading]);
 
-  // Fetch bookings when user logs in
+  // Fetch bookings when user logs in, clear when user logs out
   useEffect(() => {
     if (user) {
+      // Clear old bookings first to prevent showing wrong user's bookings
+      setBookings([]);
+      setLoading(true); // Set loading immediately so skeleton shows
+      // Fetch bookings immediately
       fetchBookings();
+    } else {
+      // Clear bookings when user logs out
+      setBookings([]);
+      setSelectedBooking(null);
+      setLoading(false);
     }
-  }, [user, fetchBookings]);
+  }, [user?.id, fetchBookings, setBookings, setSelectedBooking, setLoading]);
 
   const createBooking = async (data: {
     pickup: Address;
     drop: Address;
     parcelDetails: ParcelDetails;
     fare?: number;
+    paymentMethod?: PaymentMethod;
+    couponCode?: string;
+    deliveryType?: "sameDay" | "later";
+    deliveryDate?: string;
   }) => {
     try {
       if (!user) throw new Error("User not authenticated");
@@ -109,12 +153,16 @@ export const useBooking = () => {
     }
   };
 
-  const updateStatus = async (bookingId: string, status: BookingStatus) => {
+  const updateStatus = async (bookingId: string, status: BookingStatus, returnReason?: string) => {
     try {
       setError(null);
       setLoading(true);
-      await bookingService.updateBookingStatus(bookingId, status);
-      updateBooking(bookingId, { status });
+      const updatedBooking = await bookingService.updateBookingStatus(bookingId, status, returnReason);
+      updateBooking(bookingId, { 
+        status,
+        returnReason: updatedBooking.returnReason,
+        returnedAt: updatedBooking.returnedAt,
+      });
       
       // Refresh bookings list after updating
       await fetchBookings();
@@ -143,14 +191,55 @@ export const useBooking = () => {
     }
   };
 
+  /**
+   * Load more bookings (for infinite scroll)
+   */
+  const loadMoreBookings = useCallback(async () => {
+    if (!user || !hasMore || loadingMore) return;
+
+    try {
+      setError(null);
+      setLoadingMore(true);
+
+      let result: {
+        bookings: Booking[];
+        hasMore: boolean;
+        lastDocId?: string;
+      };
+
+      if (user.role === "admin") {
+        result = await bookingService.getAllBookings(undefined, {
+          limit: 20,
+          lastDocId,
+        });
+      } else {
+        result = await bookingService.getUserBookings({
+          limit: 20,
+          lastDocId,
+        });
+      }
+
+      appendBookings(result.bookings);
+      setPagination(result.hasMore, result.lastDocId);
+    } catch (error: any) {
+      setError(error.message || "Failed to load more bookings");
+      console.error("Error loading more bookings:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [user, hasMore, lastDocId, loadingMore, appendBookings, setPagination]);
+
   return {
     bookings,
     selectedBooking,
     loading,
+    loadingMore,
+    hasMore,
     error,
     createBooking,
     fetchBooking,
     fetchBookings, // Expose fetchBookings for manual refresh
+    loadMoreBookings, // Load more for infinite scroll
     trackBooking, // Track booking by tracking number
     updateStatus,
     setSelectedBooking,

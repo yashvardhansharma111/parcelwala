@@ -1,0 +1,26 @@
+{
+    "cli": {
+      "version": ">= 3.15.1"
+    },
+    "build": {
+      "apk": {
+        "android": {
+          "buildType": "apk"
+        },
+        "env": {
+          "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAwGkNqQcidik3TrJZauWsh572PDnnAV90",
+          "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "parcelbooking001.firebaseapp.com",
+          "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "parcelbooking001",
+          "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "parcelbooking001.appspot.com",
+          "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "272259934801",
+          "EXPO_PUBLIC_FIREBASE_APP_ID": "1:272259934801:web:13b22c4437d9cc5eeee670",
+          "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-SVWCWYR502",
+          "EXPO_PUBLIC_API_BASE_URL": "https://your-vercel-url.vercel.app"
+        }
+      }
+    },
+    "submit": {
+      "production": {}
+    }
+  }
+  
