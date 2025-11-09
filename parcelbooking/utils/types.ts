@@ -4,7 +4,7 @@
 
 export type UserRole = "admin" | "customer";
 
-export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned";
+export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned" | "Cancelled";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 

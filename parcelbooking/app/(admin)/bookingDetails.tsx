@@ -468,6 +468,7 @@ export default function AdminBookingDetailsScreen() {
                   placeholder="Enter fare amount"
                   keyboardType="decimal-pad"
                   style={styles.fareInput}
+                  containerStyle={styles.fareInputContainer}
                 />
                 <TouchableOpacity
                   style={styles.calculateButton}
@@ -1057,8 +1058,15 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: "flex-start",
   },
-  fareInput: {
+  fareInputContainer: {
     flex: 1,
+    marginBottom: 0,
+  },
+  fareInput: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.text,
+    minHeight: 50,
   },
   calculateButton: {
     flexDirection: "row",

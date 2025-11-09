@@ -358,3 +358,30 @@ export const getBookingStatistics = async (): Promise<{
     throw new Error(error.message || "Failed to fetch booking statistics");
   }
 };
+
+/**
+ * Cancel booking
+ */
+export const cancelBooking = async (
+  bookingId: string,
+  cancelReason?: string
+): Promise<Booking> => {
+  try {
+    const body: any = { status: "Cancelled" };
+    if (cancelReason) {
+      body.returnReason = cancelReason; // Reuse returnReason field for cancel reason
+    }
+
+    const response = await apiRequest<{ booking: Booking }>(
+      `/bookings/${bookingId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }
+    );
+
+    return response.booking;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to cancel booking");
+  }
+};

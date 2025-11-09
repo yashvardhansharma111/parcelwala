@@ -6,12 +6,16 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import 'react-native-reanimated';
 import { useAuthStore } from '../store/authStore';
 import { useAuth } from '../hooks/useAuth';
 import { Loader } from '../components/Loader';
 import { View } from 'react-native';
 import { isExpoGo } from '../services/notificationService';
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
@@ -80,6 +84,18 @@ export default function RootLayout() {
     };
     initAuth();
   }, []);
+
+  // Hide splash screen when app is ready
+  useEffect(() => {
+    if (isReady && !loading) {
+      // Hide splash screen after a short delay to ensure smooth transition
+      setTimeout(() => {
+        SplashScreen.hideAsync().catch(() => {
+          // Ignore errors if splash screen is already hidden
+        });
+      }, 500);
+    }
+  }, [isReady, loading]);
 
   useEffect(() => {
     // Don't navigate until router is ready and we've checked auth

@@ -26,12 +26,43 @@ import { colors } from "../../theme/colors";
 import { formatDate } from "../../utils/formatters";
 import { Feather } from "@expo/vector-icons";
 import { Alert } from "react-native";
+import { cancelBooking } from "../../services/bookingService";
 
 export default function CustomerHomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { bookings, loading, fetchBookings } = useBooking();
   const { logout } = useAuth();
+  const [cancellingBookingId, setCancellingBookingId] = React.useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingBookingId(bookingId);
+              await cancelBooking(bookingId);
+              Alert.alert("Success", "Booking cancelled successfully");
+              await fetchBookings();
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to cancel booking");
+            } finally {
+              setCancellingBookingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Fetch bookings when screen is focused
   useFocusEffect(
@@ -136,30 +167,53 @@ export default function CustomerHomeScreen() {
             <FlatList
               data={recentBookings}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <Card style={styles.bookingCard}>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push(`/(customer)/booking/track?id=${item.id}`)
-                    }
-                  >
-                    <View style={styles.bookingHeader}>
-                      <Text style={styles.trackingNumber}>
-                        {item.trackingNumber || `#${item.id.slice(0, 8)}`}
-                      </Text>
-                      <StatusBadge status={item.status} />
-                    </View>
-                    <View style={styles.bookingInfo}>
-                      <Text style={styles.bookingRoute}>
-                        {item.pickup.city} → {item.drop.city}
-                      </Text>
-                      <Text style={styles.bookingDate}>
-                        {formatDate(item.createdAt)}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </Card>
-              )}
+              renderItem={({ item }) => {
+                const canCancel = item.status === "Created" || item.status === "PendingPayment";
+                const isCancelling = cancellingBookingId === item.id;
+                return (
+                  <Card style={styles.bookingCard}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push(`/(customer)/booking/track?id=${item.id}`)
+                      }
+                    >
+                      <View style={styles.bookingHeader}>
+                        <Text style={styles.trackingNumber}>
+                          {item.trackingNumber || `#${item.id.slice(0, 8)}`}
+                        </Text>
+                        <StatusBadge status={item.status} />
+                      </View>
+                      <View style={styles.bookingInfo}>
+                        <Text style={styles.bookingRoute}>
+                          {item.pickup.city} → {item.drop.city}
+                        </Text>
+                        <Text style={styles.bookingDate}>
+                          {formatDate(item.createdAt)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {canCancel && (
+                      <TouchableOpacity
+                        style={styles.cancelButton}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleCancelBooking(item.id);
+                        }}
+                        disabled={isCancelling}
+                      >
+                        <Feather 
+                          name="x-circle" 
+                          size={16} 
+                          color={colors.error} 
+                        />
+                        <Text style={styles.cancelButtonText}>
+                          {isCancelling ? "Cancelling..." : "Cancel"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </Card>
+                );
+              }}
               scrollEnabled={false}
             />
           )}
@@ -261,6 +315,24 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: "center",
     alignItems: "center",
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: colors.error + "10",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.error,
   },
 });
 

@@ -15,6 +15,7 @@ export const STATUS_TYPES: BookingStatus[] = [
   "Shipped",
   "Delivered",
   "Returned",
+  "Cancelled",
 ];
 
 export const PAYMENT_STATUS_TYPES: PaymentStatus[] = [
@@ -31,6 +32,7 @@ export const STATUS_COLORS: Record<BookingStatus, string> = {
   Shipped: "#8B5CF6", // Purple
   Delivered: "#10B981", // Green
   Returned: "#EF4444", // Red
+  Cancelled: "#6B7280", // Gray
 };
 
 export const PAYMENT_STATUS_COLORS: Record<PaymentStatus, string> = {

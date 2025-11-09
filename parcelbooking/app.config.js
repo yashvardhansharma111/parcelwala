@@ -37,6 +37,7 @@ module.exports = function (config) {
   return {
     ...config,
     owner: "yashvardhansharma001", // Required by EAS CLI for dynamic configs
+    scheme: config.scheme || appJson.expo.scheme || "parcelbooking", // Ensure scheme is set for Linking
     plugins: filteredPlugins,
     android: {
       ...android,

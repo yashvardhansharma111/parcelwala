@@ -31,6 +31,7 @@ import { formatDate, displayPhoneNumber } from "../../utils/formatters";
 import { Booking, BookingStatus } from "../../utils/types";
 import { STATUS_TYPES, PAYMENT_STATUS_TYPES } from "../../utils/constants";
 import { Feather } from "@expo/vector-icons";
+import { cancelBooking } from "../../services/bookingService";
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
@@ -94,6 +95,37 @@ export default function AdminDashboardScreen() {
     setShowFilterModal(false);
   };
 
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingBookingId(bookingId);
+              await cancelBooking(bookingId);
+              Alert.alert("Success", "Booking cancelled successfully");
+              await fetchBookings();
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to cancel booking");
+            } finally {
+              setCancellingBookingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const filteredBookings = bookings.filter((booking) => {
     if (filters.status && booking.status !== filters.status) return false;
     if (filters.paymentStatus && booking.paymentStatus !== filters.paymentStatus)
@@ -113,6 +145,9 @@ export default function AdminDashboardScreen() {
   });
 
   const renderBookingItem = ({ item }: { item: Booking }) => {
+    const canCancel = item.status !== "Cancelled" && item.status !== "Delivered" && item.status !== "Returned";
+    const isCancelling = cancellingBookingId === item.id;
+
     return (
       <Card style={styles.bookingCard}>
         <TouchableOpacity
@@ -152,6 +187,25 @@ export default function AdminDashboardScreen() {
             )}
           </View>
         </TouchableOpacity>
+        {canCancel && (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleCancelBooking(item.id);
+            }}
+            disabled={isCancelling}
+          >
+            <Feather 
+              name="x-circle" 
+              size={16} 
+              color={colors.error} 
+            />
+            <Text style={styles.cancelButtonText}>
+              {isCancelling ? "Cancelling..." : "Cancel"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </Card>
     );
   };
@@ -706,6 +760,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.background,
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: colors.error + "10",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.error,
   },
 });
 

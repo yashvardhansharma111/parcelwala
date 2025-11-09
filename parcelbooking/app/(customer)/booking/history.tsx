@@ -3,7 +3,7 @@
  * View all past bookings
  */
 
-import React, { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useBooking } from "../../../hooks/useBooking";
@@ -24,11 +25,42 @@ import { colors } from "../../../theme/colors";
 import { formatDate } from "../../../utils/formatters";
 import { Booking } from "../../../utils/types";
 import { Feather } from "@expo/vector-icons";
+import { cancelBooking } from "../../../services/bookingService";
 
 export default function BookingHistoryScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { bookings, loading, loadingMore, hasMore, fetchBookings, loadMoreBookings } = useBooking();
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        {
+          text: "No",
+          style: "cancel",
+        },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setCancellingBookingId(bookingId);
+              await cancelBooking(bookingId);
+              Alert.alert("Success", "Booking cancelled successfully");
+              await fetchBookings();
+            } catch (error: any) {
+              Alert.alert("Error", error.message || "Failed to cancel booking");
+            } finally {
+              setCancellingBookingId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   // Fetch bookings when screen is focused
   useFocusEffect(
@@ -40,6 +72,8 @@ export default function BookingHistoryScreen() {
   );
 
   const renderBookingItem = ({ item }: { item: Booking }) => {
+    const canCancel = item.status === "Created" || item.status === "PendingPayment";
+    const isCancelling = cancellingBookingId === item.id;
     return (
       <Card style={styles.bookingCard}>
         <TouchableOpacity
@@ -65,6 +99,25 @@ export default function BookingHistoryScreen() {
             )}
           </View>
         </TouchableOpacity>
+        {canCancel && (
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleCancelBooking(item.id);
+            }}
+            disabled={isCancelling}
+          >
+            <Feather 
+              name="x-circle" 
+              size={16} 
+              color={colors.error} 
+            />
+            <Text style={styles.cancelButtonText}>
+              {isCancelling ? "Cancelling..." : "Cancel"}
+            </Text>
+          </TouchableOpacity>
+        )}
       </Card>
     );
   };
@@ -156,6 +209,24 @@ const styles = StyleSheet.create({
   footerLoader: {
     padding: 20,
     alignItems: "center",
+  },
+  cancelButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: colors.error + "10",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.error,
   },
 });
 
