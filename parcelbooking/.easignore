@@ -1,12 +1,57 @@
+# VCS / tooling
+.git/
+.husky/
+.vscode/
+.idea/
+.DS_Store
+
+# Package manager cache
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / build outputs (never upload)
 node_modules/
-.expo/
-.expo-shared/
-.cache/
 dist/
 build/
-*.map
-__tests__/
-coverage/
-docs/
-.DS_Store
-Thumbs.db
+
+# React Native / Android
+android/.gradle/
+android/.cxx/
+android/build/
+android/app/build/
+android/app/intermediates/
+android/.idea/
+**/*.keystore
+
+# iOS (if exists)
+ios/Pods/
+ios/build/
+ios/*.xcodeproj/project.xcworkspace/
+ios/*.xcworkspace/
+
+# Expo caches
+.expo/
+.expo-shared/
+
+# Assets that explode size (keep only what you truly need)
+**/*.mp4
+**/*.mov
+**/*.wav
+**/*.psd
+**/*.ai
+**/*.zip
+**/*.rar
+**/*.7z
+
+# Don’t upload generated binaries / artifacts
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.tar
+**/*.tar.gz
+
+# Your previous folder that had big artifacts
+parcelbooking/debug/
+parcelbooking/release/
+parcelbooking/artifact.tar.gz
