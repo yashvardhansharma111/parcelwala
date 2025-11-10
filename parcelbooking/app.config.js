@@ -35,7 +35,7 @@ module.exports = function (config) {
   // Return config with filtered plugins, ensuring all required fields are present
   return {
     ...config,
-    owner: "yashvardhansharma001", // keep owner if required
+    owner: "s3hill16", // keep owner if required
     slug: "parcelbooking",         // <<< set the slug you want for the NEW project
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
