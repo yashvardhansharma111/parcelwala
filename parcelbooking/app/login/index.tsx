@@ -85,9 +85,15 @@ export default function LoginScreen() {
       setOtpError("");
       const result = await verifyOTP(otpCode);
       
-      // Check if name is required (new user)
+      // Check if name is required (new user needs to sign up)
       if (result.requiresName) {
         setNeedsName(true);
+        // Show alert message
+        Alert.alert(
+          "Account Not Found",
+          "This phone number is not registered. Please enter your name to sign up and create a new account.",
+          [{ text: "OK" }]
+        );
       }
       // Otherwise navigation handled in useAuth hook
     } catch (err: any) {
@@ -198,7 +204,10 @@ export default function LoginScreen() {
           ) : needsName ? (
             <View style={styles.form}>
               <Text style={styles.subtitle}>
-                Welcome! Please enter your name to complete signup
+                Account Not Found
+              </Text>
+              <Text style={styles.description}>
+                This phone number is not registered. Please enter your name to create a new account.
               </Text>
               <Input
                 label="Name"
@@ -320,6 +329,13 @@ const styles = StyleSheet.create({
     color: colors.primary,
     textAlign: "center",
     marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 20,
   },
   subtitle: {
     fontSize: 16,
