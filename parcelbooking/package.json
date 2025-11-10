@@ -1,5 +1,6 @@
 {
-  "name": "parcelbooking",
+  "name": "parcelwalla",
+  "slug": "parcelbooking-clean",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
