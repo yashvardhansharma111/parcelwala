@@ -28,6 +28,8 @@ module.exports = function (config) {
     ...appJson.expo.android,
     ...config.android,
     package: config.android?.package || appJson.expo.android?.package || "com.ratlam.parcelbooking",
+    // Allow cleartext HTTP traffic for this APK (useful for dev / internal testing)
+    usesCleartextTraffic: true,
   };
 
   // Return config with filtered plugins, ensuring all required fields are present
@@ -41,6 +43,7 @@ module.exports = function (config) {
     android: {
       ...android,
       package: android.package || "com.ratlam.parcelbooking",
+      // usesCleartextTraffic already set above
     },
     extra,
     ios: config.ios || appJson.expo.ios,
