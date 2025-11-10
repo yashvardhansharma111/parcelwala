@@ -14,6 +14,7 @@ import {
   Modal,
   TextInput,
   Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -447,19 +448,33 @@ export default function AdminBookingDetailsScreen() {
         animationType="slide"
         onRequestClose={() => setShowFareModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Update Fare</Text>
-              <TouchableOpacity
-                onPress={() => setShowFareModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Feather name="x" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setShowFareModal(false)}
+            style={styles.modalOverlay}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Update Fare</Text>
+                  <TouchableOpacity
+                    onPress={() => setShowFareModal(false)}
+                    style={styles.modalCloseButton}
+                  >
+                    <Feather name="x" size={24} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
 
-            <View style={styles.modalBody}>
+                <ScrollView
+                  style={styles.modalBody}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                >
               <Text style={styles.modalLabel}>Fare Amount (₹)</Text>
               <View style={styles.fareInputRow}>
                 <Input
@@ -532,9 +547,9 @@ export default function AdminBookingDetailsScreen() {
                   </View>
                 </View>
               )}
-            </View>
+                </ScrollView>
 
-            <View style={styles.modalFooter}>
+                <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => setShowFareModal(false)}
@@ -550,9 +565,11 @@ export default function AdminBookingDetailsScreen() {
                   {updatingFare ? "Updating..." : "Update Fare"}
                 </Text>
               </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Return Parcel Modal */}
@@ -1026,7 +1043,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingBottom: 32,
+    paddingBottom: Platform.OS === "ios" ? 32 : 20,
+    maxHeight: "90%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1046,6 +1064,7 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     padding: 20,
+    maxHeight: 400,
   },
   modalLabel: {
     fontSize: 16,
