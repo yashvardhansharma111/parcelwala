@@ -128,7 +128,14 @@ export default function CustomerHomeScreen() {
           </TouchableOpacity>
         }
       />
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
+        removeClippedSubviews={true}
+        scrollEventThrottle={16}
+      >
         <View style={styles.header}>
           <Text style={styles.greeting}>
             Hi {user?.name || user?.phoneNumber || "User"}
@@ -230,6 +237,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   header: {
     padding: 24,

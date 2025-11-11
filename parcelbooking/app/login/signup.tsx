@@ -3,7 +3,7 @@
  * OTP-based signup with name
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "../../components/Input";
 import { Button } from "../../components/Button";
@@ -22,11 +22,25 @@ import { colors } from "../../theme/colors";
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { sendOTP, verifyOTP, loading, otpSent, error } = useAuth();
+  const params = useLocalSearchParams();
+  const { sendOTP, verifyOTP, loading, otpSent, error, resetOTP } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [name, setName] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
+  const [fromLogin, setFromLogin] = useState(false);
+
+  // Check if redirected from login page
+  useEffect(() => {
+    if (params.phoneNumber && params.otpCode && params.fromLogin === "true") {
+      setPhoneNumber(params.phoneNumber as string);
+      setOtpCode(params.otpCode as string);
+      setFromLogin(true);
+      // Mark OTP as sent since we already have the OTP
+      // We need to manually set this state - but since we can't directly set otpSent,
+      // we'll handle the UI differently
+    }
+  }, [params]);
 
   const handleSendOTP = async () => {
     if (!name.trim()) {
@@ -107,12 +121,14 @@ export default function SignupScreen() {
         <View style={styles.content}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>
-            {otpSent
+            {fromLogin
+              ? "Enter your name to complete signup"
+              : otpSent
               ? "Enter the OTP sent to your phone"
               : "Enter your details to get started"}
           </Text>
 
-          {!otpSent ? (
+          {!otpSent && !fromLogin ? (
             <View style={styles.form}>
               <Input
                 label="Name"
@@ -183,14 +199,40 @@ export default function SignupScreen() {
             </View>
           ) : (
             <View style={styles.form}>
+              {fromLogin && (
+                <>
+                  <View style={styles.infoBox}>
+                    <Text style={styles.infoText}>
+                      Account not found. Please enter your name to create a new account.
+                    </Text>
+                  </View>
+                  <Input
+                    label="Phone Number"
+                    placeholder="+91 12345 67890"
+                    value={phoneNumber}
+                    editable={false}
+                    style={styles.readOnlyInput}
+                  />
+                </>
+              )}
               <Input
                 label="Name"
                 placeholder="Enter your name"
                 value={name}
                 onChangeText={(text) => setName(text)}
-                editable={false}
-                style={styles.readOnlyInput}
+                editable={fromLogin || !otpSent}
+                style={!fromLogin && otpSent ? styles.readOnlyInput : undefined}
+                autoFocus={fromLogin}
               />
+              {!fromLogin && (
+                <Input
+                  label="Phone Number"
+                  placeholder="+91 12345 67890"
+                  value={phoneNumber}
+                  editable={false}
+                  style={styles.readOnlyInput}
+                />
+              )}
               <Input
                 label="Enter OTP"
                 placeholder="000000"
@@ -201,7 +243,9 @@ export default function SignupScreen() {
                 }}
                 keyboardType="number-pad"
                 maxLength={6}
-                autoFocus
+                editable={!fromLogin}
+                style={fromLogin ? styles.readOnlyInput : undefined}
+                autoFocus={!fromLogin}
               />
 
               {(error || otpError) && (
@@ -209,20 +253,27 @@ export default function SignupScreen() {
               )}
 
               <Button
-                title="Verify OTP & Signup"
+                title={fromLogin ? "Complete Signup" : "Verify OTP & Signup"}
                 onPress={handleVerifyOTP}
                 loading={loading}
                 style={styles.button}
               />
 
               <Button
-                title="Change Phone Number"
+                title={fromLogin ? "Back to Login" : "Change Phone Number"}
                 variant="outline"
                 onPress={() => {
-                  setOtpCode("");
-                  setOtpError("");
-                  setPhoneNumber("");
-                  setName("");
+                  if (fromLogin) {
+                    // Go back to login
+                    router.back();
+                  } else {
+                    // Reset form
+                    setOtpCode("");
+                    setOtpError("");
+                    setPhoneNumber("");
+                    setName("");
+                    resetOTP();
+                  }
                 }}
                 style={styles.button}
               />
@@ -292,6 +343,18 @@ const styles = StyleSheet.create({
   readOnlyInput: {
     backgroundColor: colors.border + "40",
     opacity: 0.7,
+  },
+  infoBox: {
+    backgroundColor: colors.primary + "20",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoText: {
+    fontSize: 14,
+    color: colors.primary,
+    textAlign: "center",
+    lineHeight: 20,
   },
 });
 

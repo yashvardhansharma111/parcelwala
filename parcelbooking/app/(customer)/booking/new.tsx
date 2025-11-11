@@ -72,6 +72,9 @@ export default function NewBookingScreen() {
   const [couponCode, setCouponCode] = useState("");
   const [couponValidating, setCouponValidating] = useState(false);
   const [couponError, setCouponError] = useState<string | null>(null);
+  
+  // Weight validation state
+  const [weightError, setWeightError] = useState<string | null>(null);
 
   const [pickup, setPickup] = useState<Address>({
     name: "",
@@ -299,7 +302,7 @@ export default function NewBookingScreen() {
       const hasDropPincode = drop.pincode && drop.pincode.length === 6;
       const hasPickupCity = pickup.city && pickup.city.trim().length > 0;
       const hasDropCity = drop.city && drop.city.trim().length > 0;
-      const hasWeight = parcelDetails.weight && parcelDetails.weight > 0;
+      const hasWeight = parcelDetails.weight && parcelDetails.weight > 0 && parcelDetails.weight <= 5;
       
       console.log("[Fare] Calculation check:", {
         hasWeight,
@@ -314,8 +317,12 @@ export default function NewBookingScreen() {
       });
       
       // Need at least weight and both cities to calculate fare
-      if (!hasWeight || !hasPickupCity || !hasDropCity) {
-        console.log("[Fare] Missing required fields, clearing fare");
+      // Also check weight doesn't exceed 5 kg
+      if (!hasWeight || !hasPickupCity || !hasDropCity || parcelDetails.weight > 5) {
+        if (parcelDetails.weight > 5) {
+          setWeightError("Maximum weight allowed is 5 kg");
+        }
+        console.log("[Fare] Missing required fields or weight exceeds limit, clearing fare");
         setFareCalculation(null);
         return;
       }
@@ -462,6 +469,13 @@ export default function NewBookingScreen() {
       return;
     }
 
+    // Validate weight limit (max 5 kg)
+    if (parcelDetails.weight > 5) {
+      Alert.alert("Validation Error", "Maximum weight allowed is 5 kg. Please reduce the parcel weight.");
+      setWeightError("Maximum weight allowed is 5 kg");
+      return;
+    }
+
     if (!fareCalculation || !fareCalculation.totalFare) {
       Alert.alert("Validation Error", "Please wait for fare calculation");
       return;
@@ -533,7 +547,15 @@ export default function NewBookingScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
       >
-        <ScrollView style={styles.scrollView}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={true}
+          scrollEventThrottle={16}
+          nestedScrollEnabled={true}
+        >
           <View style={styles.content}>
             <Card>
               <Text style={styles.sectionTitle}>Pickup Address</Text>
@@ -565,6 +587,10 @@ export default function NewBookingScreen() {
                         nestedScrollEnabled={true}
                         keyboardShouldPersistTaps="handled"
                         scrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
+                        removeClippedSubviews={true}
+                        scrollEventThrottle={16}
+                        contentContainerStyle={{ paddingBottom: 8 }}
                       >
                         {pickupSuggestions.map((item, index) => (
                           <TouchableOpacity
@@ -643,7 +669,14 @@ export default function NewBookingScreen() {
                   </TouchableOpacity>
                   {showPickupCityDropdown && (
                     <View style={styles.dropdownList}>
-                      <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 200 }}>
+                      <ScrollView 
+                        nestedScrollEnabled={true} 
+                        style={{ maxHeight: 200 }}
+                        showsVerticalScrollIndicator={true}
+                        removeClippedSubviews={true}
+                        scrollEventThrottle={16}
+                        keyboardShouldPersistTaps="handled"
+                      >
                         {loadingCities ? (
                           <View style={styles.dropdownLoading}>
                             <ActivityIndicator size="small" color={colors.primary} />
@@ -742,6 +775,10 @@ export default function NewBookingScreen() {
                         nestedScrollEnabled={true}
                         keyboardShouldPersistTaps="handled"
                         scrollEnabled={true}
+                        showsVerticalScrollIndicator={true}
+                        removeClippedSubviews={true}
+                        scrollEventThrottle={16}
+                        contentContainerStyle={{ paddingBottom: 8 }}
                       >
                         {dropSuggestions.map((item, index) => (
                           <TouchableOpacity
@@ -821,7 +858,14 @@ export default function NewBookingScreen() {
                   </TouchableOpacity>
                   {showDropCityDropdown && (
                     <View style={styles.dropdownList}>
-                      <ScrollView nestedScrollEnabled={true} style={{ maxHeight: 200 }}>
+                      <ScrollView 
+                        nestedScrollEnabled={true} 
+                        style={{ maxHeight: 200 }}
+                        showsVerticalScrollIndicator={true}
+                        removeClippedSubviews={true}
+                        scrollEventThrottle={16}
+                        keyboardShouldPersistTaps="handled"
+                      >
                         {loadingCities ? (
                           <View style={styles.dropdownLoading}>
                             <ActivityIndicator size="small" color={colors.primary} />
@@ -936,16 +980,27 @@ export default function NewBookingScreen() {
                 </TouchableOpacity>
               </Modal>
               <Input
-                label="Weight (kg)"
+                label="Weight (kg) - Max 5 kg"
                 value={parcelDetails.weight?.toString() || ""}
-                onChangeText={(text) =>
+                onChangeText={(text) => {
+                  const weight = parseFloat(text) || 0;
                   setParcelDetails((prev) => ({
                     ...prev,
-                    weight: parseFloat(text) || 0,
-                  }))
-                }
+                    weight: weight,
+                  }));
+                  
+                  // Validate weight in real-time
+                  if (weight > 5) {
+                    setWeightError("Maximum weight allowed is 5 kg");
+                  } else if (weight <= 0 && text.trim() !== "") {
+                    setWeightError("Weight must be greater than 0");
+                  } else {
+                    setWeightError(null);
+                  }
+                }}
                 placeholder="0.5"
                 keyboardType="decimal-pad"
+                error={weightError || undefined}
               />
               <Input
                 label="Description (Optional)"
@@ -1350,6 +1405,10 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 24,
   },
   content: {
     padding: 16,

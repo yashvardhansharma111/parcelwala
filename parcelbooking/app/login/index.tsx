@@ -28,10 +28,8 @@ export default function LoginScreen() {
   const router = useRouter();
   const { sendOTP, verifyOTP, loading, otpSent, error, resetOTP } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [name, setName] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
-  const [needsName, setNeedsName] = useState(false); // New user needs to provide name
 
   const handleSendOTP = async () => {
     if (!phoneNumber.trim()) {
@@ -87,32 +85,20 @@ export default function LoginScreen() {
       
       // Check if name is required (new user needs to sign up)
       if (result.requiresName) {
-        setNeedsName(true);
-        // Show alert message
-        Alert.alert(
-          "Account Not Found",
-          "This phone number is not registered. Please enter your name to sign up and create a new account.",
-          [{ text: "OK" }]
-        );
+        // Redirect to signup page with phone number and OTP
+        router.push({
+          pathname: "/login/signup",
+          params: {
+            phoneNumber: phoneNumber,
+            otpCode: otpCode,
+            fromLogin: "true",
+          },
+        });
+        return;
       }
       // Otherwise navigation handled in useAuth hook
     } catch (err: any) {
       setOtpError(err.message || "Invalid OTP");
-    }
-  };
-
-  const handleSubmitName = async () => {
-    if (!name.trim()) {
-      setOtpError("Please enter your name");
-      return;
-    }
-
-    try {
-      setOtpError("");
-      await verifyOTP(otpCode, name.trim());
-      // Navigation handled in useAuth hook
-    } catch (err: any) {
-      setOtpError(err.message || "Failed to complete signup");
     }
   };
 
@@ -138,7 +124,7 @@ export default function LoginScreen() {
               : "Enter your phone number to get started"}
           </Text>
 
-          {!otpSent && !needsName ? (
+          {!otpSent ? (
             <View style={styles.form}>
               <Input
                 label="Phone Number"
@@ -201,44 +187,6 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-          ) : needsName ? (
-            <View style={styles.form}>
-              <Text style={styles.subtitle}>
-                Account Not Found
-              </Text>
-              <Text style={styles.description}>
-                This phone number is not registered. Please enter your name to create a new account.
-              </Text>
-              <Input
-                label="Name"
-                placeholder="Enter your name"
-                value={name}
-                onChangeText={(text) => setName(text)}
-                autoFocus
-              />
-
-              {(error || otpError) && (
-                <Text style={styles.errorText}>{error || otpError}</Text>
-              )}
-
-              <Button
-                title="Complete Signup"
-                onPress={handleSubmitName}
-                loading={loading}
-                style={styles.button}
-              />
-
-              <Button
-                title="Back"
-                variant="outline"
-                onPress={() => {
-                  setNeedsName(false);
-                  setName("");
-                  setOtpError("");
-                }}
-                style={styles.button}
-              />
-            </View>
           ) : (
             <View style={styles.form}>
               <TouchableOpacity
@@ -247,7 +195,6 @@ export default function LoginScreen() {
                   setOtpCode("");
                   setOtpError("");
                   setPhoneNumber("");
-                  setNeedsName(false);
                   // Reset OTP sent status to go back to phone input
                   resetOTP();
                 }}
@@ -288,7 +235,6 @@ export default function LoginScreen() {
                   setOtpCode("");
                   setOtpError("");
                   setPhoneNumber("");
-                  setNeedsName(false);
                   // Reset OTP sent status from auth hook
                   resetOTP();
                 }}

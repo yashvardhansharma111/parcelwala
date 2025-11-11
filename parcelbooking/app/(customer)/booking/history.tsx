@@ -152,6 +152,12 @@ export default function BookingHistoryScreen() {
               </View>
             ) : null
           }
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          windowSize={10}
+          scrollEventThrottle={16}
         />
       )}
     </View>
