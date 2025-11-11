@@ -35,6 +35,138 @@ import {
 import { validateCoupon } from "../../../services/couponService";
 import { mapApi } from "../../../services/apiClient";
 
+// Simple Calendar Component
+const CalendarComponent: React.FC<{
+  selectedDate: Date | null;
+  onDateSelect: (date: Date) => void;
+  minDate: Date;
+}> = ({ selectedDate, onDateSelect, minDate }) => {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+  
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+  
+  const isDateDisabled = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate <= today;
+  };
+  
+  const isDateSelected = (date: Date) => {
+    if (!selectedDate) return false;
+    const selected = new Date(selectedDate);
+    selected.setHours(0, 0, 0, 0);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    return selected.getTime() === checkDate.getTime();
+  };
+  
+  const renderCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentMonth);
+    const firstDay = getFirstDayOfMonth(currentMonth);
+    const days: (Date | null)[] = [];
+    
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    
+    // Add all days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+      days.push(date);
+    }
+    
+    const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    
+    return (
+      <View style={styles.calendar}>
+        {/* Month Navigation */}
+        <View style={styles.calendarHeader}>
+          <TouchableOpacity
+            onPress={() => {
+              const prevMonth = new Date(currentMonth);
+              prevMonth.setMonth(prevMonth.getMonth() - 1);
+              setCurrentMonth(prevMonth);
+            }}
+          >
+            <Feather name="chevron-left" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.calendarMonthText}>
+            {currentMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              const nextMonth = new Date(currentMonth);
+              nextMonth.setMonth(nextMonth.getMonth() + 1);
+              setCurrentMonth(nextMonth);
+            }}
+          >
+            <Feather name="chevron-right" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
+        
+        {/* Week Days Header */}
+        <View style={styles.weekDaysContainer}>
+          {weekDays.map((day) => (
+            <View key={day} style={styles.weekDay}>
+              <Text style={styles.weekDayText}>{day}</Text>
+            </View>
+          ))}
+        </View>
+        
+        {/* Calendar Grid */}
+        <View style={styles.calendarGrid}>
+          {days.map((date, index) => {
+            if (date === null) {
+              return <View key={index} style={styles.calendarDay} />;
+            }
+            
+            const disabled = isDateDisabled(date);
+            const selected = isDateSelected(date);
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.calendarDay,
+                  selected && styles.calendarDaySelected,
+                  disabled && styles.calendarDayDisabled,
+                ]}
+                onPress={() => {
+                  if (!disabled) {
+                    onDateSelect(date);
+                  }
+                }}
+                disabled={disabled}
+              >
+                <Text
+                  style={[
+                    styles.calendarDayText,
+                    selected && styles.calendarDayTextSelected,
+                    disabled && styles.calendarDayTextDisabled,
+                  ]}
+                >
+                  {date.getDate()}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+  
+  return renderCalendar();
+};
+
 export default function NewBookingScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
@@ -1283,59 +1415,48 @@ export default function NewBookingScreen() {
                     animationType="slide"
                     onRequestClose={() => setShowDatePicker(false)}
                   >
-                    <View style={styles.modalOverlay}>
-                      <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Select Delivery Date</Text>
-                        <View style={styles.dateInputContainer}>
-                          <Input
-                            label="Date"
-                            value={
-                              deliveryDate
-                                ? new Date(deliveryDate).toISOString().split("T")[0]
-                                : ""
-                            }
-                            onChangeText={(text) => {
-                              if (text) {
-                                const date = new Date(text);
-                                if (!isNaN(date.getTime())) {
-                                  setDeliveryDate(date);
+                    <Pressable
+                      style={styles.modalOverlay}
+                      onPress={() => setShowDatePicker(false)}
+                    >
+                      <Pressable onPress={(e) => e.stopPropagation()}>
+                        <View style={styles.modalContent}>
+                          <Text style={styles.modalTitle}>Select Delivery Date</Text>
+                          <View style={styles.calendarContainer}>
+                            <CalendarComponent
+                              selectedDate={deliveryDate}
+                              onDateSelect={(date) => setDeliveryDate(date)}
+                              minDate={new Date(Date.now() + 24 * 60 * 60 * 1000)} // Tomorrow
+                            />
+                          </View>
+                          <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                              style={[styles.modalButton, styles.modalButtonCancel]}
+                              onPress={() => {
+                                setShowDatePicker(false);
+                              }}
+                            >
+                              <Text style={styles.modalButtonText}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.modalButton, styles.modalButtonConfirm]}
+                              onPress={() => {
+                                if (!deliveryDate) {
+                                  const tomorrow = new Date();
+                                  tomorrow.setDate(tomorrow.getDate() + 1);
+                                  setDeliveryDate(tomorrow);
                                 }
-                              }
-                            }}
-                            placeholder="YYYY-MM-DD"
-                            keyboardType="default"
-                          />
-                          <Text style={styles.dateHint}>
-                            Format: YYYY-MM-DD (e.g., 2024-12-25)
-                          </Text>
+                                setShowDatePicker(false);
+                              }}
+                            >
+                              <Text style={[styles.modalButtonText, { color: colors.primary }]}>
+                                Confirm
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
-                        <View style={styles.modalButtons}>
-                          <TouchableOpacity
-                            style={[styles.modalButton, styles.modalButtonCancel]}
-                            onPress={() => {
-                              setShowDatePicker(false);
-                            }}
-                          >
-                            <Text style={styles.modalButtonText}>Cancel</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.modalButton, styles.modalButtonConfirm]}
-                            onPress={() => {
-                              if (!deliveryDate) {
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setDeliveryDate(tomorrow);
-                              }
-                              setShowDatePicker(false);
-                            }}
-                          >
-                            <Text style={[styles.modalButtonText, { color: colors.primary }]}>
-                              Confirm
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
+                      </Pressable>
+                    </Pressable>
                   </Modal>
                 )}
               </Card>
@@ -1593,6 +1714,71 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     fontStyle: "italic",
+    textAlign: "center",
+  },
+  calendarContainer: {
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+  },
+  calendar: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+    paddingHorizontal: 8,
+  },
+  calendarMonthText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  weekDaysContainer: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  weekDay: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  weekDayText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  calendarDay: {
+    width: "14.28%",
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  calendarDaySelected: {
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+  },
+  calendarDayDisabled: {
+    opacity: 0.3,
+  },
+  calendarDayText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  calendarDayTextSelected: {
+    color: colors.background,
+    fontWeight: "600",
+  },
+  calendarDayTextDisabled: {
+    color: colors.textLight,
   },
   modalButtons: {
     flexDirection: "row",
@@ -1700,12 +1886,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: colors.background,
+    backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingTop: 20,
     paddingBottom: 40,
-    maxHeight: "50%",
+    maxHeight: "80%",
+    minHeight: 400,
   },
   modalTitle: {
     fontSize: 18,

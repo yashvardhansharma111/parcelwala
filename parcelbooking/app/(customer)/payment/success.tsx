@@ -30,7 +30,7 @@ export default function PaymentSuccessScreen() {
         try {
           // Call backend to get bookingId from merchantRefId
           const response = await apiRequest<{ success: boolean; bookingId?: string; message?: string }>(
-            `/payments/success?merchantRefId=${encodeURIComponent(merchantRefId)}`,
+            `/api/payments/success?merchantRefId=${encodeURIComponent(merchantRefId)}`,
             { method: "GET" }
           );
           if (response.success && response.bookingId) {

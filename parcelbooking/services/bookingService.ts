@@ -258,7 +258,7 @@ export const subscribeToUserBookings = (
 ): (() => void) => {
   // Fetch bookings initially
   getUserBookings()
-    .then(callback)
+    .then((result) => callback(result.bookings))
     .catch((error) => {
       console.error("Error fetching bookings:", error);
     });
@@ -277,7 +277,7 @@ export const subscribeToAllBookings = (
 ): (() => void) => {
   // Fetch bookings initially
   getAllBookings()
-    .then(callback)
+    .then((result) => callback(result.bookings))
     .catch((error) => {
       console.error("Error fetching bookings:", error);
     });

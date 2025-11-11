@@ -56,6 +56,11 @@ export const verifyOTP = async (code: string, name?: string): Promise<{ user: Us
       return { requiresName: true };
     }
 
+    // Validate that we have all required data
+    if (!response.accessToken || !response.refreshToken || !response.user) {
+      throw new Error("Invalid response from server. Missing authentication data.");
+    }
+
     // Store tokens and user data
     await setAccessToken(response.accessToken);
     await setRefreshToken(response.refreshToken);

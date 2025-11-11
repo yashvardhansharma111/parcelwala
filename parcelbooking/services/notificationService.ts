@@ -35,12 +35,20 @@ export const isExpoGo = (): boolean => {
  */
 const getOneSignalAppId = (): string => {
   // Try to get from expo config
-  const appId = 
-    Constants?.expoConfig?.extra?.onesignal?.appId ||
-    Constants?.easConfig?.extra?.onesignal?.appId ||
-    "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"; // Fallback to hardcoded value
+  const expoAppId = Constants?.expoConfig?.extra?.onesignal?.appId;
+  if (expoAppId) {
+    return expoAppId;
+  }
   
-  return appId;
+  // Try to get from EAS config (with type assertion for extra property)
+  const easConfig = Constants?.easConfig as any;
+  const easAppId = easConfig?.extra?.onesignal?.appId;
+  if (easAppId) {
+    return easAppId;
+  }
+  
+  // Fallback to hardcoded value
+  return "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7";
 };
 
 /**

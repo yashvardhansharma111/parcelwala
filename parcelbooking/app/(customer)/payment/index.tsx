@@ -56,74 +56,80 @@ export default function PaymentScreen() {
     }
   }, [id, bookingDataParam]);
 
-  // Listen for app state changes to verify payment when user returns from external browser
+  // Poll payment status when transaction ID is set
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", async (nextAppState) => {
-      // Only verify if we have transaction ID and user just returned to app
-      // For new bookings, we don't have selectedBooking yet, so check transactionId only
-      if (nextAppState === "active" && transactionId && !processing) {
-        console.log("[PaymentScreen] App became active, checking payment status...");
+    if (!transactionId || processing) return;
+
+    let pollInterval: NodeJS.Timeout | null = null;
+    let pollCount = 0;
+    const maxPolls = 20; // Poll for up to 2 minutes (20 * 6 seconds)
+    const pollIntervalMs = 6000; // Poll every 6 seconds
+
+    const checkPaymentStatus = async () => {
+      pollCount++;
+      console.log(`[PaymentScreen] Polling payment status (attempt ${pollCount}/${maxPolls})...`);
+      
+      try {
+        const status = await paymentService.checkPaymentStatus(transactionId!);
+        console.log("[PaymentScreen] Payment status:", status);
         
-        // Wait a bit for webhook to process
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        
-        try {
-          // Check payment status first
-          const status = await paymentService.checkPaymentStatus(transactionId);
-          console.log("[PaymentScreen] Payment status:", status);
+        if (status.status === "SUCCESS") {
+          // Payment successful - navigate to success page
+          const bookingId = selectedBooking?.id || null;
+          const merchantRefId = status.merchantReferenceId || transactionId;
           
-          if (status.status === "SUCCESS") {
-            // Payment successful - navigate to success page
-            // For new bookings, bookingId will be extracted from merchantReferenceId in success handler
-            const bookingId = selectedBooking?.id || null;
-            router.push(
-              `/(customer)/payment/success?transactionId=${transactionId}${bookingId ? `&bookingId=${bookingId}` : ""}`
-            );
-            setTransactionId(null);
-          } else if (status.status === "FAILED") {
-            // Payment failed
-            Alert.alert(
-              "Payment Failed",
-              "The payment could not be processed. Please try again.",
-              [
-                {
-                  text: "Try Again",
-                  onPress: () => {
-                    setTransactionId(null);
-                  },
-                },
-                {
-                  text: "Cancel",
-                  style: "cancel",
-                  onPress: () => router.push("/(customer)/booking/history"),
-                },
-              ]
-            );
-            setTransactionId(null);
-          } else {
-            // Payment is still pending
-            Alert.alert(
-              "Payment Pending",
-              "Your payment is being processed. We'll update your booking status once the payment is confirmed. You can check your booking status in the bookings section.",
-              [
-                {
-                  text: "Check Bookings",
-                  onPress: () => router.push("/(customer)/booking/history"),
-                },
-                {
-                  text: "OK",
-                  style: "default",
-                },
-              ]
-            );
-            setTransactionId(null);
+          // Stop polling
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
           }
-        } catch (error: any) {
-          console.log("[PaymentScreen] Payment verification error:", error.message);
-          // Don't assume success on error - ask user to check status
+          
+          setTransactionId(null);
+          
+          // Navigate to success page
+          const params = new URLSearchParams();
+          params.append('merchantRefId', merchantRefId);
+          if (bookingId) params.append('bookingId', bookingId);
+          
+          router.push(`/(customer)/payment/success?${params.toString()}`);
+        } else if (status.status === "FAILED") {
+          // Payment failed - stop polling
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+          
+          setTransactionId(null);
+          
+          Alert.alert(
+            "Payment Failed",
+            "The payment could not be processed. Please try again.",
+            [
+              {
+                text: "Try Again",
+                onPress: () => {
+                  // Allow user to retry
+                },
+              },
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => router.push("/(customer)/booking/history"),
+              },
+            ]
+          );
+        } else if (pollCount >= maxPolls) {
+          // Max polls reached - stop polling
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
+          
+          setTransactionId(null);
+          
           Alert.alert(
             "Payment Status Unknown",
-            "We couldn't verify your payment status. Please check your bookings or try again.",
+            "We couldn't verify your payment status automatically. Please check your bookings or contact support.",
             [
               {
                 text: "Check Bookings",
@@ -135,7 +141,59 @@ export default function PaymentScreen() {
               },
             ]
           );
+        }
+        // If still pending, continue polling
+      } catch (error: any) {
+        console.log("[PaymentScreen] Payment verification error:", error.message);
+        // Continue polling on error (might be temporary network issue)
+        if (pollCount >= maxPolls) {
+          if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+          }
           setTransactionId(null);
+        }
+      }
+    };
+
+    // Start polling after initial delay (wait for webhook to process)
+    const initialDelay = setTimeout(() => {
+      checkPaymentStatus();
+      // Continue polling
+      pollInterval = setInterval(checkPaymentStatus, pollIntervalMs);
+    }, 5000); // Wait 5 seconds before first check
+
+    return () => {
+      if (initialDelay) clearTimeout(initialDelay);
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [transactionId, processing, selectedBooking, router]);
+
+  // Listen for app state changes to verify payment when user returns from external browser
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (nextAppState) => {
+      // When app becomes active, trigger immediate payment check
+      if (nextAppState === "active" && transactionId && !processing) {
+        console.log("[PaymentScreen] App became active, checking payment status immediately...");
+        
+        try {
+          const status = await paymentService.checkPaymentStatus(transactionId);
+          console.log("[PaymentScreen] Payment status on app resume:", status);
+          
+          if (status.status === "SUCCESS") {
+            const bookingId = selectedBooking?.id || null;
+            const merchantRefId = status.merchantReferenceId || transactionId;
+            
+            setTransactionId(null);
+            
+            const params = new URLSearchParams();
+            params.append('merchantRefId', merchantRefId);
+            if (bookingId) params.append('bookingId', bookingId);
+            
+            router.push(`/(customer)/payment/success?${params.toString()}`);
+          }
+        } catch (error) {
+          console.log("[PaymentScreen] Error checking payment on app resume:", error);
         }
       }
     });
@@ -143,7 +201,7 @@ export default function PaymentScreen() {
     return () => {
       subscription.remove();
     };
-  }, [transactionId, processing]);
+  }, [transactionId, processing, selectedBooking, router]);
 
   const handlePayment = async () => {
     if (!user) {
