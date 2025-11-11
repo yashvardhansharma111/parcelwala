@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { Linking } from 'react-native';
 import 'react-native-reanimated';
 import { useAuthStore } from '../store/authStore';
 import { useAuth } from '../hooks/useAuth';
@@ -25,51 +24,6 @@ export default function RootLayout() {
   const { user, isAuthenticated, loading } = useAuthStore();
   const { checkAuthState } = useAuth();
   const [isReady, setIsReady] = useState(false);
-
-  // Set up deep link listener for payment success
-  useEffect(() => {
-    const handleDeepLink = (url: string) => {
-      console.log("[DeepLink] Received URL:", url);
-      
-      try {
-        // Parse deep link: parcelbooking://payment/success?merchantRefId=...&bookingId=...
-        if (url.includes('payment/success')) {
-          const urlObj = new URL(url.replace('parcelbooking://', 'https://'));
-          const merchantRefId = urlObj.searchParams.get('merchantRefId');
-          const bookingId = urlObj.searchParams.get('bookingId');
-          
-          console.log("[DeepLink] Payment success detected:", { merchantRefId, bookingId });
-          
-          // Navigate to payment success screen
-          if (isAuthenticated) {
-            const params = new URLSearchParams();
-            if (merchantRefId) params.append('merchantRefId', merchantRefId);
-            if (bookingId) params.append('bookingId', bookingId);
-            
-            router.push(`/(customer)/payment/success?${params.toString()}`);
-          }
-        }
-      } catch (error) {
-        console.error("[DeepLink] Error handling deep link:", error);
-      }
-    };
-
-    // Handle initial URL (if app was opened via deep link)
-    Linking.getInitialURL().then((url) => {
-      if (url) {
-        handleDeepLink(url);
-      }
-    });
-
-    // Listen for deep links while app is running
-    const subscription = Linking.addEventListener('url', (event) => {
-      handleDeepLink(event.url);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isAuthenticated, router]);
 
   // Set up notification listeners early (before registration)
   useEffect(() => {
