@@ -101,9 +101,10 @@ module.exports = function (config) {
     },
   };
 
+  // Ensure android config is always defined, even if config.android is undefined
   const android = {
-    ...appJson.expo.android,
-    ...config.android,
+    ...(appJson.expo.android || {}),
+    ...(config.android || {}),
     package: config.android?.package || appJson.expo.android?.package || "com.ratlam.parcelbooking",
     usesCleartextTraffic: true,
     googleServicesFile: config.android?.googleServicesFile || appJson.expo.android?.googleServicesFile || "./google-services.json",
@@ -118,6 +119,8 @@ module.exports = function (config) {
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
+    // Ensure android is always defined to prevent "Cannot read properties of undefined" errors
+    android: config.android || appJson.expo.android || {},
   };
 
   finalConfig.sdkVersion = sdkVersion;
