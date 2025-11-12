@@ -139,6 +139,9 @@ module.exports = function (config) {
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
+    // Preserve SDK version and runtime version for Expo Updates
+    sdkVersion: config.sdkVersion || appJson.expo.sdkVersion || "54.0.0",
+    runtimeVersion: config.runtimeVersion || appJson.expo.runtimeVersion || { policy: "appVersion" },
     plugins: filteredPlugins,
     android: {
       ...android,
