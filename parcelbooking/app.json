@@ -3,6 +3,7 @@
     "name": "parcelbooking",
     "slug": "parcelbooking",
     "version": "1.0.0",
+    "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/parcelwalla.png",
     "scheme": "parcelbooking",
