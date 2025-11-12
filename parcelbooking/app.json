@@ -8,7 +8,7 @@
     "icon": "./assets/images/parcelwalla.png",
     "scheme": "parcelbooking",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "appVersion"
     },
