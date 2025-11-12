@@ -25,7 +25,20 @@
       "notification": {
         "icon": "./assets/images/parcelwalla.png",
         "color": "#FF6B35"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "parcelbooking",
+              "host": "payment"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "output": "static",

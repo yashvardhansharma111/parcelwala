@@ -3,10 +3,11 @@
  * Handles navigation and authentication routing
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Stack, useRouter, useSegments, usePathname } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import 'react-native-reanimated';
 import { useAuthStore } from '../store/authStore';
 import { useAuth } from '../hooks/useAuth';
@@ -76,6 +77,112 @@ export default function RootLayout() {
     };
   }, []);
 
+  // Handle deep links function
+  const handleDeepLink = useCallback((url: string) => {
+    try {
+      console.log('[DeepLink] 🔵 ========== DEEP LINK RECEIVED ==========');
+      console.log('[DeepLink] 📥 Raw URL:', url);
+      console.log('[DeepLink] 📱 App state:', {
+        isReady: isReady,
+        isAuthenticated: isAuthenticated,
+        hasUser: !!user,
+        userId: user?.id,
+      });
+      
+      const parsed = Linking.parse(url);
+      console.log('[DeepLink] 🔍 Parsed URL structure:', {
+        scheme: parsed.scheme,
+        hostname: parsed.hostname,
+        path: parsed.path,
+        pathname: parsed.pathname,
+        queryParams: parsed.queryParams,
+        fullParsed: parsed,
+      });
+
+      // Handle parcelbooking://payment/success or parcelbooking://payment/failed
+      // Also handle intent:// URLs from Android
+      const scheme = parsed.scheme || '';
+      const hostname = parsed.hostname || '';
+      const path = parsed.path || '';
+      const pathname = parsed.pathname || '';
+      
+      // Check for parcelbooking:// scheme or intent:// with parcelbooking scheme
+      const isParcelBookingScheme = scheme === 'parcelbooking' || 
+                                    (scheme === 'intent' && parsed.queryParams?.scheme === 'parcelbooking');
+      const isPaymentHost = hostname === 'payment' || pathname?.includes('payment');
+      
+      if (isParcelBookingScheme && isPaymentHost) {
+        const params = parsed.queryParams || {};
+        const fullPath = path || pathname || '';
+        
+        console.log('[DeepLink] Payment deep link detected:', { scheme, hostname, path, pathname, fullPath, params });
+
+        if (fullPath.includes('success') || pathname?.includes('success')) {
+          // Navigate to payment success screen
+          console.log('[DeepLink] ✅ Payment success deep link detected');
+          console.log('[DeepLink] 📋 Extracted params:', params);
+          console.log('[DeepLink] 🔐 Auth status:', {
+            isAuthenticated: isAuthenticated,
+            hasUser: !!user,
+            userId: user?.id,
+          });
+          
+          if (isAuthenticated && user) {
+            // Build query string from params
+            const filteredParams = Object.entries(params)
+              .filter(([key]) => key !== 'scheme' && key !== 'package'); // Filter out intent-specific params
+            const queryString = filteredParams
+              .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
+              .join('&');
+            
+            console.log('[DeepLink] 🚀 Navigating to payment success screen');
+            console.log('[DeepLink] 📍 Route:', `/(customer)/payment/success?${queryString}`);
+            console.log('[DeepLink] 📊 Query params:', filteredParams);
+            
+            router.push(`/(customer)/payment/success?${queryString}` as any);
+            console.log('[DeepLink] ✅ Navigation triggered');
+          } else {
+            // Store deep link to navigate after auth
+            console.log('[DeepLink] ⚠️  User not authenticated, will navigate after login');
+            // The auth flow will handle this after login
+          }
+        } else if (fullPath.includes('failed') || pathname?.includes('failed')) {
+          // Navigate to payment failed screen
+          console.log('[DeepLink] ❌ Payment failed deep link detected');
+          console.log('[DeepLink] 📋 Extracted params:', params);
+          
+          if (isAuthenticated && user) {
+            const filteredParams = Object.entries(params)
+              .filter(([key]) => key !== 'scheme' && key !== 'package');
+            const queryString = filteredParams
+              .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
+              .join('&');
+            
+            console.log('[DeepLink] 🚀 Navigating to booking history with payment failed flag');
+            console.log('[DeepLink] 📍 Route:', `/(customer)/booking/history?paymentFailed=true&${queryString}`);
+            
+            // Navigate to booking history with payment failed flag
+            router.push(`/(customer)/booking/history?paymentFailed=true&${queryString}` as any);
+            console.log('[DeepLink] ✅ Navigation triggered');
+          } else {
+            console.log('[DeepLink] ⚠️  User not authenticated for failed payment');
+          }
+        } else {
+          console.log('[DeepLink] ⚠️  Unknown payment deep link path:', { fullPath, pathname });
+        }
+      }
+    } catch (error) {
+      console.error('[DeepLink] ❌ ========== ERROR HANDLING DEEP LINK ==========');
+      console.error('[DeepLink] ❌ Error details:', {
+        error: error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        url: url,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }, [isAuthenticated, user, router]);
+
   useEffect(() => {
     const initAuth = async () => {
       await checkAuthState();
@@ -84,6 +191,35 @@ export default function RootLayout() {
     };
     initAuth();
   }, []);
+
+  // Handle deep links when app is opened from closed state
+  useEffect(() => {
+    if (!isReady) return;
+
+    // Check if app was opened via deep link
+    console.log('[DeepLink] 🔍 Checking for initial deep link URL...');
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        console.log('[DeepLink] 📱 App opened from closed state with deep link:', url);
+        handleDeepLink(url);
+      } else {
+        console.log('[DeepLink] ℹ️  No initial deep link URL found (app opened normally)');
+      }
+    }).catch((error) => {
+      console.error('[DeepLink] ❌ Error getting initial URL:', error);
+    });
+
+    // Listen for deep links when app is already running
+    console.log('[DeepLink] 👂 Setting up deep link listener for running app...');
+    const subscription = Linking.addEventListener('url', (event) => {
+      console.log('[DeepLink] 📱 Deep link received while app is running:', event.url);
+      handleDeepLink(event.url);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [isReady, isAuthenticated, user, handleDeepLink]);
 
   // Hide splash screen when app is ready
   useEffect(() => {

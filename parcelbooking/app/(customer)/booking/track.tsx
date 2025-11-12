@@ -11,7 +11,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useBooking } from "../../../hooks/useBooking";
 import { Card } from "../../../components/Card";
 import { StatusBadge } from "../../../components/StatusBadge";
@@ -41,6 +41,56 @@ export default function TrackBookingScreen() {
       }
     }
   }, [id]);
+
+  // Refresh booking when screen is focused (only once per focus, not on every render)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id && !id.includes("PBS") && id.length <= 20) {
+        console.log('[TrackBooking] 🔄 Screen focused, refreshing booking once...');
+        fetchBooking(id).catch((error) => {
+          console.error('[TrackBooking] ❌ Error refreshing booking:', error);
+        });
+      }
+    }, [id]) // Removed fetchBooking from dependencies - it should be stable
+  );
+
+  // Auto-refresh booking if status is PendingPayment but payment is paid
+  useEffect(() => {
+    if (id && selectedBooking && !id.includes("PBS") && id.length <= 20) {
+      // If booking is PendingPayment but paymentStatus is paid, refresh more frequently
+      const needsRefresh = selectedBooking.status === "PendingPayment" && selectedBooking.paymentStatus === "paid";
+      
+      if (needsRefresh) {
+        console.log('[TrackBooking] 🔄 Status mismatch detected (PendingPayment but paid), auto-refreshing...');
+        let refreshCount = 0;
+        const maxRefreshes = 5; // Only refresh 5 times (10 seconds total)
+        
+        const refreshInterval = setInterval(() => {
+          refreshCount++;
+          if (refreshCount > maxRefreshes) {
+            clearInterval(refreshInterval);
+            console.log('[TrackBooking] ✅ Stopped auto-refresh (max attempts reached)');
+            return;
+          }
+          console.log('[TrackBooking] 🔄 Auto-refreshing booking to get updated status...', refreshCount);
+          fetchBooking(id).catch((error) => {
+            console.error('[TrackBooking] ❌ Error refreshing booking:', error);
+          });
+        }, 2000); // Refresh every 2 seconds
+
+        // Clear interval after 10 seconds
+        const timeoutId = setTimeout(() => {
+          clearInterval(refreshInterval);
+          console.log('[TrackBooking] ✅ Stopped auto-refresh (timeout)');
+        }, 10000);
+
+        return () => {
+          clearInterval(refreshInterval);
+          clearTimeout(timeoutId);
+        };
+      }
+    }
+  }, [id, selectedBooking?.status, selectedBooking?.paymentStatus]); // Removed fetchBooking from dependencies
 
   const getStatusIcon = (status: BookingStatus): keyof typeof Feather.glyphMap => {
     switch (status) {
@@ -128,9 +178,21 @@ export default function TrackBookingScreen() {
             <Text style={styles.sectionTitle}>Status Timeline</Text>
             <View style={styles.timeline}>
               {STATUS_TYPES.map((status, index) => {
+                // Skip PendingPayment if payment is already paid
+                if (status === "PendingPayment" && selectedBooking.paymentStatus === "paid") {
+                  return null;
+                }
+                
+                // Calculate which statuses to show (filter out PendingPayment if paid)
+                const visibleStatuses = STATUS_TYPES.filter(s => 
+                  !(s === "PendingPayment" && selectedBooking.paymentStatus === "paid")
+                );
+                const visibleIndex = visibleStatuses.indexOf(status);
+                const visibleStatusIndex = visibleStatuses.indexOf(selectedBooking.status);
+                
                 const statusIconName = getStatusIcon(status);
-                const isCompleted = index <= statusIndex;
-                const isCurrent = index === statusIndex;
+                const isCompleted = visibleIndex <= visibleStatusIndex;
+                const isCurrent = visibleIndex === visibleStatusIndex;
 
                 return (
                   <View key={status} style={styles.timelineItem}>
@@ -161,7 +223,7 @@ export default function TrackBookingScreen() {
                         )}
                       </View>
                     </View>
-                    {index < STATUS_TYPES.length - 1 && (
+                    {visibleIndex < visibleStatuses.length - 1 && (
                       <View
                         style={[
                           styles.timelineLine,

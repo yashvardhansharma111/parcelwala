@@ -2,16 +2,37 @@
 const appJson = require('./app.json');
 
 module.exports = function (config) {
-  // Filter out the worklets plugin if it's causing issues
-  const plugins = config.plugins || [];
-  const filteredPlugins = plugins.filter(plugin => {
-    // Exclude worklets plugin if it's auto-detected
-    if (typeof plugin === 'string' && plugin.includes('worklets')) {
-      return false;
-    }
-    if (Array.isArray(plugin) && typeof plugin[0] === 'string' && plugin[0].includes('worklets')) {
-      return false;
-    }
+  const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || (appJson.expo?.extra?.onesignal?.appId) || null;
+
+  // Merge plugins from app.json and config, prioritizing config plugins
+  const appJsonPlugins = appJson.expo.plugins || [];
+  const configPlugins = config.plugins || [];
+
+  // Create a map to track plugins by name to avoid duplicates
+  const pluginMap = new Map();
+
+  // Add app.json plugins first
+  appJsonPlugins.forEach(plugin => {
+    const pluginName = typeof plugin === 'string' ? plugin : plugin[0];
+    pluginMap.set(pluginName, plugin);
+  });
+
+  // Override with config plugins (config takes precedence)
+  configPlugins.forEach(plugin => {
+    const pluginName = typeof plugin === 'string' ? plugin : plugin[0];
+    pluginMap.set(pluginName, plugin);
+  });
+
+  // Ensure onesignal-expo-plugin exists
+  if (!pluginMap.has('onesignal-expo-plugin')) {
+    pluginMap.set('onesignal-expo-plugin', 'onesignal-expo-plugin');
+  }
+
+  // Convert back to array and filter out worklets
+  const allPlugins = Array.from(pluginMap.values());
+  const filteredPlugins = allPlugins.filter(plugin => {
+    if (typeof plugin === 'string' && plugin.includes('worklets')) return false;
+    if (Array.isArray(plugin) && typeof plugin[0] === 'string' && plugin[0].includes('worklets')) return false;
     return true;
   });
 
@@ -19,8 +40,10 @@ module.exports = function (config) {
   const extra = {
     ...appJson.expo.extra,
     ...config.extra,
-    // Do NOT force eas.projectId here. Allow EAS to set it when initializing.
-    // Keep other extra values if present.
+    onesignal: {
+      ...(appJson.expo?.extra?.onesignal || config.extra?.onesignal || {}),
+      appId: ONESIGNAL_APP_ID || (appJson.expo?.extra?.onesignal?.appId || null)
+    }
   };
 
   // Ensure android.package is preserved (required by EAS CLI)
@@ -28,22 +51,20 @@ module.exports = function (config) {
     ...appJson.expo.android,
     ...config.android,
     package: config.android?.package || appJson.expo.android?.package || "com.ratlam.parcelbooking",
-    // Allow cleartext HTTP traffic for this APK (useful for dev / internal testing)
     usesCleartextTraffic: true,
+    googleServicesFile: config.android?.googleServicesFile || appJson.expo.android?.googleServicesFile || "./google-services.json"
   };
 
-  // Return config with filtered plugins, ensuring all required fields are present
   return {
     ...config,
-    owner: "yashvardhansharma001", // keep owner if required
-    slug: "parcelbooking",         // <<< set the slug you want for the NEW project
+    owner: config.owner || appJson.expo.owner || "yashvardhansharma001",
+    slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
     plugins: filteredPlugins,
     android: {
       ...android,
       package: android.package || "com.ratlam.parcelbooking",
-      // usesCleartextTraffic already set above
     },
     extra,
     ios: config.ios || appJson.expo.ios,

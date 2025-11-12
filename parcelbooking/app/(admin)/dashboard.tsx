@@ -241,6 +241,87 @@ export default function AdminDashboardScreen() {
         }
       />
 
+      {/* Payment Status Quick Filters */}
+      <View style={styles.paymentQuickFilters}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickFiltersContent}>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              filters.paymentStatus === "paid" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => {
+              if (filters.paymentStatus === "paid") {
+                setFilters({ paymentStatus: undefined });
+              } else {
+                setFilters({ paymentStatus: "paid" });
+              }
+            }}
+          >
+            <Feather 
+              name="check-circle" 
+              size={16} 
+              color={filters.paymentStatus === "paid" ? colors.background : "#10B981"} 
+            />
+            <Text style={[
+              styles.quickFilterText,
+              filters.paymentStatus === "paid" && styles.quickFilterTextActive,
+            ]}>
+              Paid ({bookings.filter((b) => b.paymentStatus === "paid").length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              filters.paymentStatus === "pending" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => {
+              if (filters.paymentStatus === "pending") {
+                setFilters({ paymentStatus: undefined });
+              } else {
+                setFilters({ paymentStatus: "pending" });
+              }
+            }}
+          >
+            <Feather 
+              name="clock" 
+              size={16} 
+              color={filters.paymentStatus === "pending" ? colors.background : "#F59E0B"} 
+            />
+            <Text style={[
+              styles.quickFilterText,
+              filters.paymentStatus === "pending" && styles.quickFilterTextActive,
+            ]}>
+              Pending ({bookings.filter((b) => b.paymentStatus === "pending").length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.quickFilterChip,
+              filters.paymentStatus === "failed" && styles.quickFilterChipActive,
+            ]}
+            onPress={() => {
+              if (filters.paymentStatus === "failed") {
+                setFilters({ paymentStatus: undefined });
+              } else {
+                setFilters({ paymentStatus: "failed" });
+              }
+            }}
+          >
+            <Feather 
+              name="x-circle" 
+              size={16} 
+              color={filters.paymentStatus === "failed" ? colors.background : "#EF4444"} 
+            />
+            <Text style={[
+              styles.quickFilterText,
+              filters.paymentStatus === "failed" && styles.quickFilterTextActive,
+            ]}>
+              Failed ({bookings.filter((b) => b.paymentStatus === "failed").length})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -478,6 +559,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.surface,
+  },
+  paymentQuickFilters: {
+    backgroundColor: colors.background,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  quickFiltersContent: {
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  quickFilterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+    marginRight: 8,
+  },
+  quickFilterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  quickFilterText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  quickFilterTextActive: {
+    color: colors.background,
   },
   headerActions: {
     flexDirection: "row",

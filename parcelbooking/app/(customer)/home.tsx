@@ -68,7 +68,12 @@ export default function CustomerHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (user) {
-        fetchBookings();
+        console.log('[CustomerHome] 🔄 Screen focused, refreshing bookings...');
+        fetchBookings().then(() => {
+          console.log('[CustomerHome] ✅ Bookings refreshed');
+        }).catch((error) => {
+          console.error('[CustomerHome] ❌ Error refreshing bookings:', error);
+        });
       }
     }, [user, fetchBookings])
   );

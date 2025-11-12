@@ -1,40 +1,21 @@
 {
   "project_info": {
-    "project_number": "272259934801",
-    "project_id": "parcelbooking001",
-    "storage_bucket": "parcelbooking001.firebasestorage.app"
+    "project_number": "617047895561",
+    "project_id": "parcelwalla-66730",
+    "storage_bucket": "parcelwalla-66730.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:272259934801:android:46e404f014e454f5eee670",
+        "mobilesdk_app_id": "1:617047895561:android:d36a29abad467147c292d8",
         "android_client_info": {
-          "package_name": "com.ratlam.parcelbooking"
+          "package_name": "com.parcelwala.package"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCafs2WJICkTUQhG3xBVwDUgI9fcyl2wyw"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:272259934801:android:deefb7158343e068eee670",
-        "android_client_info": {
-          "package_name": "parcel.booking.app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyCafs2WJICkTUQhG3xBVwDUgI9fcyl2wyw"
+          "current_key": "AIzaSyBsomZTWhGKSRrwArG1xZ3-O_O1gOiIiLY"
         }
       ],
       "services": {

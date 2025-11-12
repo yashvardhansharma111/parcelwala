@@ -19,7 +19,7 @@ import {
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { captureRef } from "react-native-view-shot";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useBooking } from "../../hooks/useBooking";
 import * as bookingService from "../../services/bookingService";
 import * as addressService from "../../services/addressService";
@@ -64,6 +64,56 @@ export default function AdminBookingDetailsScreen() {
       fetchBooking(id);
     }
   }, [id]);
+
+  // Refresh booking when screen is focused (only once per focus, not on every render)
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id) {
+        console.log('[AdminBookingDetails] 🔄 Screen focused, refreshing booking once...');
+        fetchBooking(id).catch((error) => {
+          console.error('[AdminBookingDetails] ❌ Error refreshing booking:', error);
+        });
+      }
+    }, [id]) // Removed fetchBooking from dependencies - it should be stable
+  );
+
+  // Auto-refresh booking if status is PendingPayment but payment is paid
+  useEffect(() => {
+    if (id && selectedBooking) {
+      // If booking is PendingPayment but paymentStatus is paid, refresh more frequently
+      const needsRefresh = selectedBooking.status === "PendingPayment" && selectedBooking.paymentStatus === "paid";
+      
+      if (needsRefresh) {
+        console.log('[AdminBookingDetails] 🔄 Status mismatch detected (PendingPayment but paid), auto-refreshing...');
+        let refreshCount = 0;
+        const maxRefreshes = 5; // Only refresh 5 times (10 seconds total)
+        
+        const refreshInterval = setInterval(() => {
+          refreshCount++;
+          if (refreshCount > maxRefreshes) {
+            clearInterval(refreshInterval);
+            console.log('[AdminBookingDetails] ✅ Stopped auto-refresh (max attempts reached)');
+            return;
+          }
+          console.log('[AdminBookingDetails] 🔄 Auto-refreshing booking to get updated status...', refreshCount);
+          fetchBooking(id).catch((error) => {
+            console.error('[AdminBookingDetails] ❌ Error refreshing booking:', error);
+          });
+        }, 2000); // Refresh every 2 seconds
+
+        // Clear interval after 10 seconds
+        const timeoutId = setTimeout(() => {
+          clearInterval(refreshInterval);
+          console.log('[AdminBookingDetails] ✅ Stopped auto-refresh (timeout)');
+        }, 10000);
+
+        return () => {
+          clearInterval(refreshInterval);
+          clearTimeout(timeoutId);
+        };
+      }
+    }
+  }, [id, selectedBooking?.status, selectedBooking?.paymentStatus]); // Removed fetchBooking from dependencies
 
   const handleStatusUpdate = async (newStatus: BookingStatus) => {
     if (!selectedBooking || !id) return;
@@ -218,17 +268,78 @@ export default function AdminBookingDetailsScreen() {
             </Text>
           </Card>
 
+          {/* Payment Status Card - Prominent Display */}
+          <Card style={styles.paymentStatusCard}>
+            <View style={styles.paymentStatusHeader}>
+              <View style={styles.paymentStatusTitleRow}>
+                <Feather 
+                  name={selectedBooking.paymentStatus === "paid" ? "check-circle" : selectedBooking.paymentStatus === "pending" ? "clock" : "x-circle"} 
+                  size={24} 
+                  color={
+                    selectedBooking.paymentStatus === "paid" ? "#10B981" : 
+                    selectedBooking.paymentStatus === "pending" ? "#F59E0B" : 
+                    "#EF4444"
+                  } 
+                />
+                <Text style={styles.paymentStatusTitle}>Payment Status</Text>
+              </View>
+              <StatusBadge 
+                status={selectedBooking.paymentStatus as any} 
+                type="payment"
+                style={styles.paymentStatusBadge}
+              />
+            </View>
+            <View style={styles.paymentDetails}>
+              <View style={styles.paymentDetailRow}>
+                <Text style={styles.paymentDetailLabel}>Payment Method:</Text>
+                <Text style={styles.paymentDetailValue}>
+                  {selectedBooking.paymentMethod === "online" ? "💳 Online Payment" : "💵 Cash on Delivery"}
+                </Text>
+              </View>
+              {selectedBooking.fare && (
+                <View style={styles.paymentDetailRow}>
+                  <Text style={styles.paymentDetailLabel}>Amount:</Text>
+                  <Text style={[styles.paymentDetailValue, styles.paymentAmount]}>
+                    ₹{selectedBooking.fare.toFixed(0)}
+                  </Text>
+                </View>
+              )}
+              {selectedBooking.paymentStatus === "paid" && selectedBooking.updatedAt && (
+                <View style={styles.paymentDetailRow}>
+                  <Text style={styles.paymentDetailLabel}>Paid On:</Text>
+                  <Text style={styles.paymentDetailValue}>
+                    {formatDateTime(selectedBooking.updatedAt)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </Card>
+
           <Card>
             <Text style={styles.sectionTitle}>Status Timeline</Text>
             <View style={styles.statusList}>
               {STATUS_TYPES.map((status, index) => {
-                const isCompleted = index <= currentStatusIndex;
+                // Skip PendingPayment if payment is already paid
+                if (status === "PendingPayment" && selectedBooking.paymentStatus === "paid") {
+                  return null;
+                }
+                
+                // Calculate which statuses to show (filter out PendingPayment if paid)
+                const visibleStatuses = STATUS_TYPES.filter(s => 
+                  !(s === "PendingPayment" && selectedBooking.paymentStatus === "paid")
+                );
+                const visibleIndex = visibleStatuses.indexOf(status);
+                const visibleCurrentIndex = visibleStatuses.indexOf(selectedBooking.status);
+                
+                const isCompleted = visibleIndex <= visibleCurrentIndex;
+                const isCurrent = visibleIndex === visibleCurrentIndex;
+                
                 return (
                   <TouchableOpacity
                     key={status}
                     style={styles.statusItem}
                     onPress={() => handleStatusUpdate(status)}
-                    disabled={updating || index > currentStatusIndex + 1}
+                    disabled={updating || visibleIndex > visibleCurrentIndex + 1}
                   >
                     <View
                       style={[
@@ -246,7 +357,7 @@ export default function AdminBookingDetailsScreen() {
                     >
                       {status}
                     </Text>
-                    {index === currentStatusIndex && (
+                    {isCurrent && (
                       <Text style={styles.currentLabel}>Current</Text>
                     )}
                   </TouchableOpacity>
@@ -951,6 +1062,59 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
+  },
+  paymentStatusCard: {
+    backgroundColor: colors.background,
+    borderWidth: 2,
+    borderColor: colors.primary + "30",
+  },
+  paymentStatusHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  paymentStatusTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  paymentStatusTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  paymentStatusBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  paymentDetails: {
+    gap: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  paymentDetailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  paymentDetailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  paymentDetailValue: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+    textAlign: "right",
+  },
+  paymentAmount: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.primary,
   },
   sectionTitle: {
     fontSize: 18,

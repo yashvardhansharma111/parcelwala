@@ -74,10 +74,10 @@ export default function PaymentScreen() {
           
           if (status.status === "SUCCESS") {
             // Payment successful - navigate to success page
-            // For new bookings, bookingId will be extracted from merchantReferenceId in success handler
+            // Pass merchantRefId (which is the transactionId) so success screen can fetch booking
             const bookingId = selectedBooking?.id || null;
             router.push(
-              `/(customer)/payment/success?transactionId=${transactionId}${bookingId ? `&bookingId=${bookingId}` : ""}`
+              `/(customer)/payment/success?merchantRefId=${encodeURIComponent(transactionId)}${bookingId ? `&bookingId=${bookingId}` : ""}`
             );
             setTransactionId(null);
           } else if (status.status === "FAILED") {
@@ -199,22 +199,36 @@ export default function PaymentScreen() {
 
       const { paymentUrl, transactionId: txId } = paymentResult;
 
+      console.log("[PaymentScreen] 🔵 ========== PAYMENT INITIATED ==========");
+      console.log("[PaymentScreen] 📥 Payment result:", {
+        paymentUrl: paymentUrl,
+        transactionId: txId,
+        hasUrl: !!paymentUrl,
+        hasTransactionId: !!txId,
+      });
+
       // Store transaction ID for verification when user returns
       setTransactionId(txId);
+      console.log("[PaymentScreen] 💾 Transaction ID stored:", txId);
 
-      console.log("[PaymentScreen] Opening payment URL in external browser:", paymentUrl);
+      console.log("[PaymentScreen] 🌐 Opening payment URL in external browser:", paymentUrl);
       
       try {
         // Open payment URL in external browser (PayGIC UPI payment page)
+        console.log("[PaymentScreen] 🔍 Checking if URL can be opened...");
         const canOpen = await Linking.canOpenURL(paymentUrl);
+        console.log("[PaymentScreen] ✅ Can open URL:", canOpen);
         
         if (!canOpen) {
+          console.error("[PaymentScreen] ❌ Cannot open payment URL - URL not supported");
           Alert.alert("Error", "Cannot open payment URL. Please check your browser settings.");
           setTransactionId(null);
           return;
         }
 
+        console.log("[PaymentScreen] 🚀 Opening payment URL...");
         await Linking.openURL(paymentUrl);
+        console.log("[PaymentScreen] ✅ Payment URL opened successfully");
         
         // Show instruction to user
         Alert.alert(
@@ -224,13 +238,20 @@ export default function PaymentScreen() {
             {
               text: "OK",
               onPress: () => {
+                console.log("[PaymentScreen] ✅ User acknowledged payment page opened");
                 // Transaction ID is already set, AppState listener will handle verification
               },
             },
           ]
         );
       } catch (error: any) {
-        console.error("[PaymentScreen] Error opening browser:", error);
+        console.error("[PaymentScreen] ❌ ========== ERROR OPENING PAYMENT URL ==========");
+        console.error("[PaymentScreen] ❌ Error details:", {
+          error: error,
+          message: error.message || "Unknown error",
+          paymentUrl: paymentUrl,
+          transactionId: txId,
+        });
         Alert.alert(
           "Error", 
           `Cannot open payment page: ${error.message || "Unknown error"}`
