@@ -136,47 +136,50 @@ module.exports = function (config) {
   // Always ensure sdkVersion is set (required for Expo Updates)
   const sdkVersion = config.sdkVersion || appJson.expo.sdkVersion || "54.0.0";
   
-  // Get runtimeVersion - prioritize config (from EAS/remote) but fallback to app.json
-  // This handles cases where EAS might set runtimeVersion policy to "sdkVersion"
-  let runtimeVersion = config.runtimeVersion || appJson.expo.runtimeVersion || { policy: "appVersion" };
+  // Force runtimeVersion to use appVersion policy from app.json to avoid sdkVersion policy issues
+  // This prevents EAS/remote config from overriding with sdkVersion policy
+  const runtimeVersion = appJson.expo.runtimeVersion || { policy: "appVersion" };
   
-  // If runtimeVersion policy is "sdkVersion", ensure sdkVersion is available
-  if (runtimeVersion && typeof runtimeVersion === 'object' && runtimeVersion.policy === "sdkVersion") {
-    if (!sdkVersion) {
-      console.warn('[app.config.js] runtimeVersion policy is "sdkVersion" but sdkVersion is not defined. Falling back to appVersion policy.');
-      runtimeVersion = { policy: "appVersion" };
-    }
-  }
-  
+  // Build config object - put explicit settings AFTER spread to ensure they override
   const finalConfig = {
     ...config,
     owner: config.owner || appJson.expo.owner || "yashvardhansharma001",
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
-    // Always include sdkVersion (required for Expo Updates, especially with sdkVersion policy)
-    sdkVersion: sdkVersion,
-    // Set runtimeVersion (respects config from EAS/remote, but ensures sdkVersion is available if needed)
-    runtimeVersion: runtimeVersion,
-    plugins: filteredPlugins,
-    android: {
-      ...android,
-      package: android.package || "com.ratlam.parcelbooking",
+  };
+  
+  // CRITICAL: Set these AFTER to override any values from config spread
+  // Always include sdkVersion (required even if not using sdkVersion policy, for compatibility)
+  finalConfig.sdkVersion = sdkVersion;
+  // Force runtimeVersion to use appVersion policy (prevents sdkVersion policy errors)
+  // This MUST override any runtimeVersion from config that might have sdkVersion policy
+  finalConfig.runtimeVersion = runtimeVersion;
+  // Explicitly set updates configuration to ensure runtime version is correct
+  // Note: updates.runtimeVersion should be a string, not an object
+  // The root-level runtimeVersion (with policy) is what Expo Updates uses
+  finalConfig.updates = {
+    ...config.updates,
+    ...appJson.expo.updates,
+  };
+  finalConfig.plugins = filteredPlugins;
+  finalConfig.android = {
+    ...android,
+    package: android.package || "com.ratlam.parcelbooking",
+  };
+  finalConfig.extra = extra;
+  finalConfig.ios = config.ios || appJson.expo.ios;
+  finalConfig.web = config.web || appJson.expo.web;
+  // Prevent auto-detection of plugins by explicitly setting _internal
+  finalConfig._internal = {
+    ...config._internal,
+    pluginHistory: {
+      ...config._internal?.pluginHistory,
+      'react-native-worklets/plugin': false,
+      'react-native-worklets': false,
     },
-    extra,
-    ios: config.ios || appJson.expo.ios,
-    web: config.web || appJson.expo.web,
-    // Prevent auto-detection of plugins by explicitly setting _internal
-    _internal: {
-      ...config._internal,
-      pluginHistory: {
-        ...config._internal?.pluginHistory,
-        'react-native-worklets/plugin': false,
-        'react-native-worklets': false,
-      },
-      // Disable auto-detection for worklets
-      isLegacyPlugin: false,
-    },
+    // Disable auto-detection for worklets
+    isLegacyPlugin: false,
   };
 
   // Final safety check: ensure no worklets plugins slipped through
