@@ -133,15 +133,31 @@ module.exports = function (config) {
   };
 
   // Build the final config
+  // Always ensure sdkVersion is set (required for Expo Updates)
+  const sdkVersion = config.sdkVersion || appJson.expo.sdkVersion || "54.0.0";
+  
+  // Get runtimeVersion - prioritize config (from EAS/remote) but fallback to app.json
+  // This handles cases where EAS might set runtimeVersion policy to "sdkVersion"
+  let runtimeVersion = config.runtimeVersion || appJson.expo.runtimeVersion || { policy: "appVersion" };
+  
+  // If runtimeVersion policy is "sdkVersion", ensure sdkVersion is available
+  if (runtimeVersion && typeof runtimeVersion === 'object' && runtimeVersion.policy === "sdkVersion") {
+    if (!sdkVersion) {
+      console.warn('[app.config.js] runtimeVersion policy is "sdkVersion" but sdkVersion is not defined. Falling back to appVersion policy.');
+      runtimeVersion = { policy: "appVersion" };
+    }
+  }
+  
   const finalConfig = {
     ...config,
     owner: config.owner || appJson.expo.owner || "yashvardhansharma001",
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
-    // Preserve SDK version and runtime version for Expo Updates
-    sdkVersion: config.sdkVersion || appJson.expo.sdkVersion || "54.0.0",
-    runtimeVersion: config.runtimeVersion || appJson.expo.runtimeVersion || { policy: "appVersion" },
+    // Always include sdkVersion (required for Expo Updates, especially with sdkVersion policy)
+    sdkVersion: sdkVersion,
+    // Set runtimeVersion (respects config from EAS/remote, but ensures sdkVersion is available if needed)
+    runtimeVersion: runtimeVersion,
     plugins: filteredPlugins,
     android: {
       ...android,
