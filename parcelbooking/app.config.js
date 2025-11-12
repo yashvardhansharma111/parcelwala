@@ -127,7 +127,7 @@ module.exports = function (config) {
   const android = {
     ...appJson.expo.android,
     ...config.android,
-    package: config.android?.package || appJson.expo.android?.package || "com.parcelwala.package",
+    package: config.android?.package || appJson.expo.android?.package || "com.ratlam.parcelbooking",
     usesCleartextTraffic: true,
     googleServicesFile: config.android?.googleServicesFile || appJson.expo.android?.googleServicesFile || "./google-services.json"
   };
@@ -142,7 +142,7 @@ module.exports = function (config) {
     plugins: filteredPlugins,
     android: {
       ...android,
-      package: android.package || "com.parcelwala.package",
+      package: android.package || "com.ratlam.parcelbooking",
     },
     extra,
     ios: config.ios || appJson.expo.ios,
