@@ -8,6 +8,9 @@
     "scheme": "parcelbooking",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ratlam.parcelbooking"
@@ -36,7 +39,10 @@
               "host": "payment"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
