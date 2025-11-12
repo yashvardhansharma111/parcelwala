@@ -6,7 +6,7 @@ const appJson = require('./app.json');
 const Module = require('module');
 const originalRequire = Module.prototype.require;
 
-Module.prototype.require = function(id) {
+/*Module.prototype.require = function(id) {
   // Block loading of react-native-worklets plugin
   if (typeof id === 'string') {
     const normalizedId = id.replace(/\\/g, '/');
@@ -36,7 +36,7 @@ Module.prototype.require = function(id) {
     }
     throw error;
   }
-};
+};*/
 
 // Helper function to check if a plugin is worklets-related
 // This must be defined outside the function to be available early
