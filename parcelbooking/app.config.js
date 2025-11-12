@@ -115,10 +115,24 @@ module.exports = function (config) {
 
   // Build finalConfig - ensure android is ALWAYS defined with package before spreading config
   // This prevents Expo's isMatchingObject from failing when it tries to read config.android.package
+  const defaultPackage = "com.ratlam.parcelbooking";
+  const appJsonAndroid = appJson.expo.android || {};
+  
+  // Ensure app.json package is valid (not undefined)
+  const validAppJsonPackage = (appJsonAndroid.package && !appJsonAndroid.package.includes("undefined")) 
+    ? appJsonAndroid.package 
+    : defaultPackage;
+  
   const defaultAndroid = {
-    package: "com.ratlam.parcelbooking",
-    ...(appJson.expo.android || {}),
+    package: validAppJsonPackage,
+    ...appJsonAndroid,
+    package: validAppJsonPackage, // Override to ensure it's valid
   };
+  
+  // Get config android package, ensuring it's valid
+  const configPackage = (config.android?.package && !config.android.package.includes("undefined"))
+    ? config.android.package
+    : defaultPackage;
   
   const finalConfig = {
     ...config,
@@ -126,13 +140,13 @@ module.exports = function (config) {
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
-    // CRITICAL: Ensure android is always defined with at least a package property
+    // CRITICAL: Ensure android is always defined with a valid package property
     // This prevents "Cannot read properties of undefined (reading 'package')" errors
-    android: config.android ? {
+    android: {
       ...defaultAndroid,
-      ...config.android,
-      package: config.android.package || defaultAndroid.package,
-    } : defaultAndroid,
+      ...(config.android || {}),
+      package: configPackage, // Always use validated package
+    },
   };
 
   finalConfig.sdkVersion = sdkVersion;
@@ -142,10 +156,20 @@ module.exports = function (config) {
     ...appJson.expo.updates,
   };
   finalConfig.plugins = filteredPlugins;
+  // CRITICAL: Ensure android.package is always set and valid
+  // Merge with the android object we built earlier, but ensure package is always valid
   finalConfig.android = {
     ...android,
-    package: android.package || "com.ratlam.parcelbooking",
+    ...finalConfig.android, // Merge with what we set earlier
+    package: (finalConfig.android.package && !finalConfig.android.package.includes("undefined")) 
+      ? finalConfig.android.package 
+      : defaultPackage, // Use the validated default package
   };
+  
+  // Final safety check - ensure package is never undefined or invalid
+  if (!finalConfig.android.package || finalConfig.android.package.includes("undefined")) {
+    finalConfig.android.package = defaultPackage;
+  }
   finalConfig.extra = extra;
   finalConfig.ios = config.ios || appJson.expo.ios;
   finalConfig.web = config.web || appJson.expo.web;
