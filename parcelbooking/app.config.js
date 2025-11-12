@@ -113,14 +113,26 @@ module.exports = function (config) {
   const sdkVersion = config.sdkVersion || appJson.expo.sdkVersion || "54.0.0";
   const runtimeVersion = appJson.expo.runtimeVersion || { policy: "appVersion" };
 
+  // Build finalConfig - ensure android is ALWAYS defined with package before spreading config
+  // This prevents Expo's isMatchingObject from failing when it tries to read config.android.package
+  const defaultAndroid = {
+    package: "com.ratlam.parcelbooking",
+    ...(appJson.expo.android || {}),
+  };
+  
   const finalConfig = {
     ...config,
     owner: config.owner || appJson.expo.owner || "yashvardhansharma001",
     slug: config.slug || appJson.expo.slug || "parcelbooking",
     name: config.name || appJson.expo.name || "ParcelBooking",
     scheme: config.scheme || appJson.expo.scheme || "parcelbooking",
-    // Ensure android is always defined to prevent "Cannot read properties of undefined" errors
-    android: config.android || appJson.expo.android || {},
+    // CRITICAL: Ensure android is always defined with at least a package property
+    // This prevents "Cannot read properties of undefined (reading 'package')" errors
+    android: config.android ? {
+      ...defaultAndroid,
+      ...config.android,
+      package: config.android.package || defaultAndroid.package,
+    } : defaultAndroid,
   };
 
   finalConfig.sdkVersion = sdkVersion;
