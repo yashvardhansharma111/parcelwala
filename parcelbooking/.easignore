@@ -56,3 +56,5 @@ ios/build/**
 # Secrets / local config
 **/*.keystore
 *.env*
+!google-services.json
+!google-services.json
