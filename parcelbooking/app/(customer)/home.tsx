@@ -3,7 +3,7 @@
  * Dashboard with booking shortcuts
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -25,7 +25,7 @@ import { Header } from "../../components/Header";
 import { colors } from "../../theme/colors";
 import { formatDate } from "../../utils/formatters";
 import { Feather } from "@expo/vector-icons";
-import { Alert } from "react-native";
+import { Alert, Linking } from "react-native";
 import { cancelBooking } from "../../services/bookingService";
 
 export default function CustomerHomeScreen() {
@@ -69,6 +69,7 @@ export default function CustomerHomeScreen() {
     useCallback(() => {
       if (user) {
         console.log('[CustomerHome] 🔄 Screen focused, refreshing bookings...');
+        // Force refresh bookings when screen is focused, especially after payment
         fetchBookings().then(() => {
           console.log('[CustomerHome] ✅ Bookings refreshed');
         }).catch((error) => {
@@ -77,6 +78,23 @@ export default function CustomerHomeScreen() {
       }
     }, [user, fetchBookings])
   );
+
+  // Also refresh when component mounts (after payment)
+  useEffect(() => {
+    if (user) {
+      // Small delay to ensure navigation is complete before fetching
+      const timer = setTimeout(() => {
+        console.log('[CustomerHome] 🔄 Component mounted/updated, refreshing bookings...');
+        fetchBookings().catch((error) => {
+          console.error('[CustomerHome] ❌ Error refreshing bookings on mount:', error);
+        });
+      }, 300); // Small delay to ensure screen is ready
+      
+      return () => clearTimeout(timer);
+    }
+    // Only depend on user to avoid loops - fetchBookings is stable from hook
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Removed fetchBookings to prevent re-runs
 
   const handleLogout = () => {
     Alert.alert(
@@ -230,6 +248,21 @@ export default function CustomerHomeScreen() {
             />
           )}
         </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              Linking.openURL(`tel:+918462044151`);
+            }}
+            style={styles.supportButton}
+          >
+            <Feather name="phone" size={16} color={colors.primary} />
+            <Text style={styles.supportText}>Customer Support: +91 84620 44151</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -245,7 +278,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 24,
+    paddingBottom: 16,
   },
   header: {
     padding: 24,
@@ -349,6 +382,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.error,
+  },
+  footer: {
+    padding: 20,
+    paddingTop: 24,
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    marginTop: 8,
+  },
+  footerText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  supportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  supportText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: "600",
   },
 });
 

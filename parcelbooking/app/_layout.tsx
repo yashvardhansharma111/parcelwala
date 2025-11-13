@@ -139,8 +139,10 @@ export default function RootLayout() {
             console.log('[DeepLink] 📍 Route:', `/(customer)/payment/success?${queryString}`);
             console.log('[DeepLink] 📊 Query params:', filteredParams);
             
-            router.push(`/(customer)/payment/success?${queryString}` as any);
-            console.log('[DeepLink] ✅ Navigation triggered');
+            // Use replace to prevent going back to payment screen
+            // The success screen will show a loading state while processing
+            router.replace(`/(customer)/payment/success?${queryString}` as any);
+            console.log('[DeepLink] ✅ Navigation triggered - user will see loading state on success screen');
           } else {
             // Store deep link to navigate after auth
             console.log('[DeepLink] ⚠️  User not authenticated, will navigate after login');
@@ -271,10 +273,13 @@ export default function RootLayout() {
         }
       } else if (user.role === 'customer' && !inCustomerGroup && !inAuthGroup) {
         // Customer trying to access admin routes
-        try {
-          router.replace('/(customer)/home');
-        } catch (error) {
-          // Router might not be ready yet, ignore
+        // BUT: Don't redirect if user is on payment success screen
+        if (!pathname?.includes('payment/success') && !pathname?.includes('payment/')) {
+          try {
+            router.replace('/(customer)/home');
+          } catch (error) {
+            // Router might not be ready yet, ignore
+          }
         }
       }
     }

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { Button } from "../../../components/Button";
 import { Card } from "../../../components/Card";
 import { colors } from "../../../theme/colors";
@@ -15,6 +15,7 @@ import { apiRequest } from "../../../services/apiClient";
 
 export default function PaymentSuccessScreen() {
   const router = useRouter();
+  const pathname = usePathname();
   const { transactionId, bookingId, merchantRefId } = useLocalSearchParams<{
     transactionId?: string;
     bookingId?: string;
@@ -23,14 +24,28 @@ export default function PaymentSuccessScreen() {
   const { fetchBooking, fetchBookings } = useBooking();
   const [verifying, setVerifying] = useState(true);
   const [resolvedBookingId, setResolvedBookingId] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false); // Prevent multiple fetches
+
+  // Log when we're on this screen to help debug navigation issues
+  useEffect(() => {
+    console.log('[PaymentSuccess] 🎯 Screen mounted/updated, pathname:', pathname);
+  }, [pathname]);
 
   useEffect(() => {
+    // Prevent multiple runs
+    if (hasFetched) {
+      console.log('[PaymentSuccess] ⚠️  Already fetched, skipping...');
+      return;
+    }
+
     console.log('[PaymentSuccess] 🔵 ========== PAYMENT SUCCESS SCREEN ==========');
     console.log('[PaymentSuccess] 📥 Initial params:', {
       transactionId: transactionId,
       bookingId: bookingId,
       merchantRefId: merchantRefId,
     });
+    
+    setHasFetched(true); // Mark as fetched immediately to prevent re-runs
     
     // If we have merchantRefId but no bookingId, try to get bookingId from backend
     const fetchBookingFromMerchantRef = async () => {
@@ -39,22 +54,16 @@ export default function PaymentSuccessScreen() {
 
         console.log('[PaymentSuccess] 🔍 Starting booking resolution process...');
 
-        // Set a timeout to prevent getting stuck
+        // Set a timeout to prevent getting stuck in verification (reduced to 5 seconds)
         const timeoutId = setTimeout(() => {
-          if (verifying) {
-            console.warn('[PaymentSuccess] ⏰ Payment verification timeout (10s) - proceeding anyway');
-            setVerifying(false);
-            // Still try to refresh bookings even if we don't have bookingId
-            fetchBookings().catch((err) => {
-              console.error('[PaymentSuccess] ❌ Error refreshing bookings on timeout:', err);
-            });
-            // Navigate to home after timeout
-            setTimeout(() => {
-              console.log('[PaymentSuccess] 🏠 Navigating to home screen (timeout)');
-              router.replace("/(customer)/home");
-            }, 1000);
-          }
-        }, 10000); // 10 second timeout
+          console.warn('[PaymentSuccess] ⏰ Payment verification timeout (5s) - showing success screen anyway');
+          setVerifying(false);
+          // Still try to refresh bookings even if we don't have bookingId (in background)
+          fetchBookings().catch((err) => {
+            console.error('[PaymentSuccess] ❌ Error refreshing bookings on timeout:', err);
+          });
+          // Don't auto-navigate - let user see the success message and click button
+        }, 5000); // 5 second timeout (reduced from 10s)
 
         if (merchantRefId && !bookingId) {
           console.log('[PaymentSuccess] 🔍 merchantRefId provided but no bookingId, fetching from backend...');
@@ -76,21 +85,14 @@ export default function PaymentSuccessScreen() {
               console.log('[PaymentSuccess] ✅ Resolved bookingId:', finalBookingId);
               setResolvedBookingId(finalBookingId);
               
-              // Fetch the specific booking
+              // Fetch the specific booking once (no need to fetch twice)
               console.log('[PaymentSuccess] 📥 Fetching booking details...');
               await fetchBooking(finalBookingId);
               console.log('[PaymentSuccess] ✅ Booking details fetched');
               
-              // Wait a bit and fetch again to ensure we have the latest status
-              // (Status update might be in progress)
-              console.log('[PaymentSuccess] ⏳ Waiting 500ms and fetching booking again to get updated status...');
-              await new Promise(resolve => setTimeout(resolve, 500));
-              await fetchBooking(finalBookingId);
-              console.log('[PaymentSuccess] ✅ Booking details refreshed with latest status');
-              
-              // Update URL with bookingId
-              router.setParams({ bookingId: finalBookingId });
-              console.log('[PaymentSuccess] ✅ URL updated with bookingId');
+              // Don't update URL params - it can cause re-renders and infinite loops
+              // router.setParams({ bookingId: finalBookingId });
+              console.log('[PaymentSuccess] ✅ BookingId resolved:', finalBookingId);
             } else {
               console.warn('[PaymentSuccess] ⚠️  Backend response missing bookingId:', response);
             }
@@ -107,86 +109,52 @@ export default function PaymentSuccessScreen() {
           finalBookingId = bookingId;
           setResolvedBookingId(finalBookingId);
           
+          // Fetch the specific booking once (no need to fetch twice)
           console.log('[PaymentSuccess] 📥 Fetching booking details...');
           await fetchBooking(bookingId);
           console.log('[PaymentSuccess] ✅ Booking details fetched');
-          
-          // Wait a bit and fetch again to ensure we have the latest status
-          console.log('[PaymentSuccess] ⏳ Waiting 500ms and fetching booking again to get updated status...');
-          await new Promise(resolve => setTimeout(resolve, 500));
-          await fetchBooking(bookingId);
-          console.log('[PaymentSuccess] ✅ Booking details refreshed with latest status');
         } else {
           console.warn('[PaymentSuccess] ⚠️  No merchantRefId or bookingId provided');
         }
 
-        // Refresh all bookings to show the new booking in the list
-        console.log('[PaymentSuccess] 🔄 Refreshing all bookings...');
-        try {
-          await fetchBookings();
-          console.log('[PaymentSuccess] ✅ All bookings refreshed');
-        } catch (error) {
-          console.error('[PaymentSuccess] ❌ Error refreshing bookings:', {
-            error: error,
-            message: error instanceof Error ? error.message : String(error),
-          });
-          // Continue even if refresh fails
-        }
+        // Refresh all bookings once in background (don't wait for it)
+        console.log('[PaymentSuccess] 🔄 Refreshing all bookings in background...');
+        fetchBookings().catch((error) => {
+          console.error('[PaymentSuccess] ⚠️  Background refresh failed, but continuing:', error);
+        });
 
         clearTimeout(timeoutId);
         setVerifying(false);
         console.log('[PaymentSuccess] ✅ Verification complete, finalBookingId:', finalBookingId);
 
-        // Refresh bookings one more time to ensure we have the latest status
-        console.log('[PaymentSuccess] 🔄 Final refresh of bookings to get updated status...');
-        try {
-          await fetchBookings();
-          console.log('[PaymentSuccess] ✅ Final bookings refresh complete');
-        } catch (error) {
-          console.error('[PaymentSuccess] ⚠️  Final refresh failed, but continuing:', error);
-        }
-
-        // Auto-navigate to home immediately to show the booking
-        // Reduced delay so user sees the booking faster
-        if (finalBookingId) {
-          console.log('[PaymentSuccess] 🏠 Auto-navigating to home in 1 second...');
-          setTimeout(() => {
-            router.replace("/(customer)/home");
-          }, 1000);
-        } else {
-          console.log('[PaymentSuccess] 🏠 Auto-navigating to home in 2 seconds (no bookingId)...');
-          setTimeout(() => {
-            router.replace("/(customer)/home");
-          }, 2000);
-        }
+        // Don't auto-navigate - let user see the success message
+        // User can click button to go to home
+        console.log('[PaymentSuccess] ✅ Success screen ready - user can see booking successful message');
       } catch (error) {
-        console.error('[PaymentSuccess] ❌ ========== ERROR IN PAYMENT SUCCESS FLOW ==========');
-        console.error('[PaymentSuccess] ❌ Error details:', {
-          error: error,
+        // Log error but don't show to user - payment was successful, just couldn't fetch booking details
+        console.warn('[PaymentSuccess] ⚠️  Error in booking resolution (non-critical):', {
           message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
           bookingId: bookingId,
           merchantRefId: merchantRefId,
-          transactionId: transactionId,
         });
         setVerifying(false);
-        // Navigate to home even on error
-        setTimeout(() => {
-          console.log('[PaymentSuccess] 🏠 Navigating to home screen (error fallback)');
-          router.replace("/(customer)/home");
-        }, 2000);
+        // On error, still show success screen but user can navigate manually
+        // Payment was successful, so we show success even if booking fetch failed
       }
     };
 
     fetchBookingFromMerchantRef();
-  }, [bookingId, merchantRefId, fetchBooking, fetchBookings, router, verifying]);
+    // Only depend on initial params, not functions or state that changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId, merchantRefId]); // Removed verifying, fetchBooking, fetchBookings, router to prevent loops
 
   if (verifying) {
     return (
       <View style={styles.container}>
         <View style={styles.content}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.verifyingText}>Verifying payment...</Text>
+          <Text style={styles.verifyingText}>Processing payment...</Text>
+          <Text style={styles.verifyingSubtext}>Please wait while we confirm your booking</Text>
         </View>
       </View>
     );
@@ -199,7 +167,9 @@ export default function PaymentSuccessScreen() {
           <View style={styles.iconContainer}>
             <Feather name="check-circle" size={64} color={colors.success} />
           </View>
-          <Text style={styles.title}>Payment Successful!</Text>
+          <Text style={styles.title}>
+            {resolvedBookingId ? "Booking Successful!" : "Payment Successful!"}
+          </Text>
           <Text style={styles.message}>
             {resolvedBookingId 
               ? "Your booking has been confirmed and payment processed successfully!" 
@@ -207,7 +177,7 @@ export default function PaymentSuccessScreen() {
           </Text>
           {resolvedBookingId && (
             <Text style={styles.successSubtext}>
-              Booking Done ✓
+              Booking Confirmed ✓
             </Text>
           )}
           {(transactionId || merchantRefId) && (
@@ -224,23 +194,45 @@ export default function PaymentSuccessScreen() {
         )}
 
         <Button
-          title={resolvedBookingId ? "View Booking" : "Go to Home"}
+          title="Go to Home"
           onPress={() => {
-            if (resolvedBookingId) {
-              router.push(`/(customer)/booking/track?id=${resolvedBookingId}`);
-            } else {
-              router.replace("/(customer)/home");
+            // Simple, direct navigation to avoid any issues
+            console.log('Click on Home button to route on Home page');
+            try {
+              // Use replace to clear the stack and navigate directly
+              router.replace("/(customer)/home" as any);
+            } catch (error) {
+              console.error('[PaymentSuccess] ❌ Error navigating to home:', error);
+              // Fallback: use push if replace fails
+              try {
+                router.push("/(customer)/home" as any);
+              } catch (pushError) {
+                console.error('[PaymentSuccess] ❌ Push also failed:', pushError);
+              }
             }
           }}
           style={styles.button}
         />
 
-        <Button
-          title="Go to Home"
-          variant="outline"
-          onPress={() => router.replace("/(customer)/home")}
-          style={styles.button}
-        />
+        {resolvedBookingId && (
+          <Button
+            title="View Booking Details"
+            variant="outline"
+            onPress={async () => {
+              try {
+                console.log('[PaymentSuccess] 📦 Navigating to booking details:', resolvedBookingId);
+                router.push(`/(customer)/booking/track?id=${resolvedBookingId}` as any);
+              } catch (error) {
+                console.error('[PaymentSuccess] ❌ Error navigating to booking details:', error);
+              }
+            }}
+            style={styles.button}
+          />
+        )}
+
+        <Text style={styles.redirectingMessage}>
+          Please wait while redirecting to home page...
+        </Text>
       </View>
     </View>
   );
@@ -291,6 +283,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
     textAlign: "center",
+    fontWeight: "600",
+  },
+  verifyingSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.textLight,
+    textAlign: "center",
   },
   bookingIdText: {
     fontSize: 14,
@@ -305,6 +304,15 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
     fontWeight: "700",
+  },
+  redirectingMessage: {
+    fontSize: 12,
+    color: colors.textLight,
+    textAlign: "center",
+    marginTop: 16,
+    paddingHorizontal: 16,
+    lineHeight: 18,
+    fontStyle: "italic",
   },
 });
 
