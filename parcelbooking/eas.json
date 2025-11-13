@@ -4,6 +4,24 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "production": {
+      "android": {
+        "buildType": "app-bundle",
+        "autoIncrement": "versionCode"
+      },
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyASPIuyXkbRPLBTWnJWIQJXMUSnuvm50Yc",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "parcelwalla-66730.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "parcelwalla-66730",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "parcelwalla-66730.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "617047895561",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:617047895561:web:e35fb7a906bf7b84c292d8",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-R88Y2VM0G3",
+        "EXPO_PUBLIC_API_BASE_URL": "https://parcelwalah.in",
+        "ONESIGNAL_APP_ID": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
+      }
+    },
     "apk": {
       "android": {
         "buildType": "apk",
@@ -20,7 +38,7 @@
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:617047895561:web:e35fb7a906bf7b84c292d8",
         "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-R88Y2VM0G3",
         "EXPO_PUBLIC_API_BASE_URL": "https://parcelwalah.in",
-        "ONESIGNAL_APP_ID":"c7f1124b-786d-475c-b94c-1c62ed315197"
+        "ONESIGNAL_APP_ID": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
       }
     }
   },
