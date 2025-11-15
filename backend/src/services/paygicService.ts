@@ -112,12 +112,30 @@ export const createPaymentPage = async (
       failed_URL: failedUrl,
     };
 
+    // Clean token: remove all whitespace, newlines, and trim
+    const cleanToken = ENV.PAYGIC_TOKEN.replace(/\s+/g, "").trim();
+    
+    // Log token info (without exposing full token)
+    const tokenPreview = cleanToken 
+      ? `${cleanToken.substring(0, 20)}...${cleanToken.substring(cleanToken.length - 10)}` 
+      : "NOT SET";
+    console.log("🔐 Paygic Request Details:", {
+      url: `${ENV.PAYGIC_BASE_URL}/createPaymentPage`,
+      mid: ENV.PAYGIC_MID,
+      tokenLength: cleanToken.length,
+      tokenPreview: tokenPreview,
+      tokenStartsWith: cleanToken.substring(0, 10),
+      isFromEnv: !!process.env.PAYGIC_TOKEN, // Check if loaded from .env
+      originalTokenLength: ENV.PAYGIC_TOKEN?.length || 0,
+      tokenHasWhitespace: ENV.PAYGIC_TOKEN !== cleanToken,
+    });
+    
     const response = await axios.post<CreatePaymentPageResponse>(
       `${ENV.PAYGIC_BASE_URL}/createPaymentPage`,
       requestData,
       {
         headers: {
-          token: ENV.PAYGIC_TOKEN,
+          token: cleanToken, // Use cleaned token
           "Content-Type": "application/json",
         },
       }
@@ -186,12 +204,29 @@ export const checkPaymentStatus = async (
       merchantReferenceId,
     };
 
+    // Clean token: remove all whitespace, newlines, and trim
+    const cleanToken = ENV.PAYGIC_TOKEN.replace(/\s+/g, "").trim();
+    
+    // Log token info for debugging (without exposing full token)
+    const tokenPreview = cleanToken 
+      ? `${cleanToken.substring(0, 20)}...${cleanToken.substring(cleanToken.length - 10)}` 
+      : "NOT SET";
+    console.log("🔐 Paygic checkPaymentStatus Request:", {
+      url: `${ENV.PAYGIC_BASE_URL}/checkPaymentStatus`,
+      mid: ENV.PAYGIC_MID,
+      merchantReferenceId,
+      tokenLength: cleanToken.length,
+      tokenPreview: tokenPreview,
+      tokenStartsWith: cleanToken.substring(0, 10),
+      isFromEnv: !!process.env.PAYGIC_TOKEN,
+    });
+
     const response = await axios.post<CheckPaymentStatusResponse>(
       `${ENV.PAYGIC_BASE_URL}/checkPaymentStatus`,
       requestData,
       {
         headers: {
-          token: ENV.PAYGIC_TOKEN,
+          token: cleanToken, // Use cleaned token
           "Content-Type": "application/json",
         },
       }
@@ -200,10 +235,17 @@ export const checkPaymentStatus = async (
     // Log the response for debugging
     console.log("Paygic check status response:", JSON.stringify(response.data, null, 2));
 
-    // If API call failed, throw error
+    // If API call failed, throw error with detailed message
     if (!response.data.status || response.data.statusCode !== 200) {
+      const errorMsg = response.data.msg || "Failed to check payment status";
+      console.error("❌ Paygic checkPaymentStatus Error:", {
+        status: response.data.status,
+        statusCode: response.data.statusCode,
+        msg: errorMsg,
+        merchantReferenceId,
+      });
       throw createError(
-        response.data.msg || "Failed to check payment status",
+        errorMsg,
         response.data.statusCode || 500
       );
     }
@@ -212,9 +254,20 @@ export const checkPaymentStatus = async (
     // The caller should handle different statuses appropriately
     return response.data;
   } catch (error: any) {
+    // Enhanced error logging
+    console.error("❌ Paygic checkPaymentStatus Exception:", {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      merchantReferenceId,
+    });
+    
     if (error.response?.data) {
+      const errorMsg = error.response.data.msg || "Failed to check payment status";
+      console.error("❌ Paygic API Error Response:", JSON.stringify(error.response.data, null, 2));
       throw createError(
-        error.response.data.msg || "Failed to check payment status",
+        errorMsg,
         error.response.status || 500
       );
     }

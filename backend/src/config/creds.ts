@@ -21,11 +21,11 @@ export const AppCreds = {
     refreshTokenExpiry: process.env.REFRESH_TOKEN_EXPIRY || "7d",
   },
   admin: {
-    phoneNumber: process.env.ADMIN_PHONE_NUMBER || "+911234567890",
+    phoneNumber: process.env.ADMIN_PHONE_NUMBER || "+918462044151",
   },
   onesignal: {
     appId: process.env.ONESIGNAL_APP_ID || "",
-    restApiKey: process.env.ONESIGNAL_REST_API_KEY || "",
+    restApiKey: process.env.ONESIGNAL_REST_API_KEY || "os_v2_app_y7yres3ynvdvzokmdrro2mkrs7xkq264wshuaqnhh5w2kf6toxsrzz67osqjaoywiixkygkcgzowdov5p3zjje6yxvq664gzxcpetgi",
   },
 };
 

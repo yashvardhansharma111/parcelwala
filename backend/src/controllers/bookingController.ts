@@ -212,7 +212,7 @@ export const updateBookingStatus = async (
       throw createError("Status is required", 400);
     }
 
-    const validStatuses: bookingService.BookingStatus[] = ["Created", "Picked", "Shipped", "Delivered", "Returned"];
+    const validStatuses: bookingService.BookingStatus[] = ["Created", "Picked", "Shipped", "Delivered", "Returned", "Cancelled"];
     if (!validStatuses.includes(status)) {
       throw createError("Invalid status", 400);
     }
@@ -228,9 +228,19 @@ export const updateBookingStatus = async (
       throw createError("Booking not found", 404);
     }
 
-    // Only admin can update status, or user can update their own booking to "Created"
-    if (userRole !== "admin" && (booking.userId !== userId || status !== "Created")) {
-      throw createError("Unauthorized to update booking status", 403);
+    // Only admin can update status, or user can cancel their own booking (if status is Created or PendingPayment)
+    if (userRole !== "admin") {
+      if (booking.userId !== userId) {
+        throw createError("Unauthorized to update booking status", 403);
+      }
+      // Users can only cancel their own bookings if status is Created or PendingPayment
+      if (status === "Cancelled") {
+        if (booking.status !== "Created" && booking.status !== "PendingPayment") {
+          throw createError("Cannot cancel booking that has already been processed", 400);
+        }
+      } else if (status !== "Created") {
+        throw createError("Unauthorized to update booking status", 403);
+      }
     }
 
     await bookingService.updateBookingStatus(id, status, returnReason);

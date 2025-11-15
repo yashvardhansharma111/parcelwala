@@ -33,18 +33,23 @@ export const ENV = {
 
   // Paygic Payment Gateway
   PAYGIC_MID: process.env.PAYGIC_MID || "FINNPAYS",
-  PAYGIC_TOKEN: process.env.PAYGIC_TOKEN || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtaWQiOiJGSU5OUEFZUyIsIl9pZCI6IjY3Njk2MGI0ODJlNTk0MzMyMzYxMTJjOSIsImlhdCI6MTc2MjE4ODY5M30.gNpJsijmfimsXTl4ovIcEpYJ5iRtIwT55KQiCg2_7EU",
+  PAYGIC_TOKEN: process.env.PAYGIC_TOKEN || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJtaWQiOiJGSU5OUEFZUyIsIl9pZCI6IjY3Njk2MGI0ODJlNTk0MzMyMzYxMTJjOSIsImlhdCI6MTc2Mjk2MzE1NX0.M72W88k0YF126RtkQMN2d9S_UhJaodUoznZLAZsTqxU",
   PAYGIC_BASE_URL: process.env.PAYGIC_BASE_URL || "https://server.paygic.in/api/v2",
   PAYGIC_SUCCESS_URL: process.env.PAYGIC_SUCCESS_URL || "",
   PAYGIC_FAILED_URL: process.env.PAYGIC_FAILED_URL || "",
 
   // OneSignal Push Notifications
-  ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || "",
+  ONESIGNAL_APP_ID: process.env.ONESIGNAL_APP_ID || "c7f1124b-786d-475c-b94c-1c62ed315197",
   ONESIGNAL_REST_API_KEY: process.env.ONESIGNAL_REST_API_KEY || "",
 };
 
 // Log environment variable status (without exposing sensitive values)
 console.log(`✅ Environment loaded for: ${ENV.NODE_ENV}`);
-console.log(`🔐 Paygic MID configured: ${ENV.PAYGIC_MID ? "Yes" : "No"}`);
+console.log(`🔐 Paygic MID configured: ${ENV.PAYGIC_MID ? "Yes" : "No"} (${ENV.PAYGIC_MID})`);
 console.log(`🔐 Paygic Token configured: ${ENV.PAYGIC_TOKEN ? "Yes" : "No"}`);
+console.log(`🔐 Paygic Token loaded from .env: ${process.env.PAYGIC_TOKEN ? "Yes" : "No (using default)"}`);
+if (ENV.PAYGIC_TOKEN) {
+  const tokenPreview = `${ENV.PAYGIC_TOKEN.substring(0, 20)}...${ENV.PAYGIC_TOKEN.substring(ENV.PAYGIC_TOKEN.length - 10)}`;
+  console.log(`🔐 Paygic Token preview: ${tokenPreview} (length: ${ENV.PAYGIC_TOKEN.length})`);
+}
 console.log(`📱 Renflair API Key configured: ${ENV.RENFLAIR_API_KEY ? "Yes" : "No"}`);

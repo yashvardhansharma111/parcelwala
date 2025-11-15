@@ -180,7 +180,7 @@ export interface ParcelDetails {
   value?: number;
 }
 
-export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned";
+export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned" | "Cancelled";
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 export type PaymentMethod = "cod" | "online"; // Cash on Delivery or Online Payment
 
@@ -317,7 +317,7 @@ export const createBooking = async (
     const bookingDoc = await bookingRef.get();
     const data = bookingDoc.data()!;
 
-    return {
+    const booking = {
       id: bookingDoc.id,
       userId: data.userId,
       pickup: data.pickup,
@@ -331,6 +331,53 @@ export const createBooking = async (
       createdAt: data.createdAt?.toDate() || now,
       updatedAt: data.updatedAt?.toDate() || now,
     };
+
+    // Send notification after booking creation (fire and forget)
+    // Skip notification for online payments with PendingPayment status - we'll send a consolidated notification after payment
+    try {
+      if (!(bookingData.paymentMethod === "online" && bookingStatus === "PendingPayment")) {
+        const { sendNotificationToUser } = await import("./notificationService");
+        // Send notification based on initial status
+        const statusMessages: Record<BookingStatus, { title: string; body: string }> = {
+          PendingPayment: {
+            title: "Booking Created",
+            body: `Your booking ${booking.trackingNumber} has been created and is pending payment.`,
+          },
+          Created: {
+            title: "Booking Confirmed",
+            body: `Your booking ${booking.trackingNumber} has been confirmed and is ready for pickup.`,
+          },
+          Picked: { title: "", body: "" },
+          Shipped: { title: "", body: "" },
+          Delivered: { title: "", body: "" },
+          Returned: { title: "", body: "" },
+          Cancelled: { title: "", body: "" },
+        };
+        
+        const message = statusMessages[bookingStatus];
+        if (message && message.title) {
+          sendNotificationToUser(userId, {
+            title: message.title,
+            body: message.body,
+            data: {
+              type: "booking_created",
+              bookingId: booking.id,
+              trackingNumber: booking.trackingNumber,
+              status: bookingStatus,
+            },
+          }).catch((err: any) => {
+            console.error("Failed to send booking creation notification:", err);
+          });
+        }
+      } else {
+        console.log(`[createBooking] Skipping notification for online payment with PendingPayment status - will send after payment confirmation`);
+      }
+    } catch (notifError: any) {
+      // Don't fail booking creation if notification fails
+      console.error("Error sending booking creation notification:", notifError);
+    }
+
+    return booking;
   } catch (error: any) {
     console.error("Error creating booking:", error);
     throw createError("Failed to create booking", 500);
@@ -629,7 +676,7 @@ export const updateBookingStatus = async (
 
     // Send notification if status changed (don't await - fire and forget)
     if (oldStatus !== status) {
-      const { sendBookingStatusNotification } = await import("./notificationService.js");
+      const { sendBookingStatusNotification } = await import("./notificationService");
       // Fire and forget - don't block booking update if notification fails
       sendBookingStatusNotification(
         bookingData.userId,
@@ -655,57 +702,115 @@ export const updatePaymentStatus = async (
   paymentStatus: PaymentStatus
 ): Promise<void> => {
   try {
+    console.log(`[updatePaymentStatus] 🔵 ========== UPDATING PAYMENT STATUS ==========`);
+    console.log(`[updatePaymentStatus] 📥 Request:`, {
+      bookingId: bookingId,
+      paymentStatus: paymentStatus,
+    });
+    
     // Get current booking to check if it needs status update
     const bookingDoc = await db.collection("bookings").doc(bookingId).get();
     if (!bookingDoc.exists) {
+      console.error(`[updatePaymentStatus] ❌ Booking not found: ${bookingId}`);
       throw createError("Booking not found", 404);
     }
 
     const bookingData = bookingDoc.data()!;
+    const oldStatus = bookingData.status;
+    const oldPaymentStatus = bookingData.paymentStatus;
+    
+    console.log(`[updatePaymentStatus] 📋 Current booking state:`, {
+      bookingId: bookingId,
+      oldStatus: oldStatus,
+      oldPaymentStatus: oldPaymentStatus,
+      newPaymentStatus: paymentStatus,
+    });
+    
     const updateData: any = {
       paymentStatus,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    const oldStatus = bookingData.status;
+    // If payment is successful and booking is PendingPayment, confirm it (set to Created)
     const statusChanged = paymentStatus === "paid" && bookingData.status === "PendingPayment";
+    
+    console.log(`[updatePaymentStatus] 🔍 Status change check:`, {
+      paymentStatus: paymentStatus,
+      currentStatus: bookingData.status,
+      statusChanged: statusChanged,
+    });
     
     // If payment is successful and booking is PendingPayment, confirm it (set to Created)
     if (statusChanged) {
       updateData.status = "Created" as BookingStatus;
+      console.log(`[updatePaymentStatus] ✅ Status will change from PendingPayment to Created`);
+    } else {
+      console.log(`[updatePaymentStatus] ℹ️  Status will remain: ${bookingData.status}`);
     }
 
+    console.log(`[updatePaymentStatus] 📝 Update data:`, updateData);
     await db.collection("bookings").doc(bookingId).update(updateData);
+    
+    // Verify the update
+    const updatedDoc = await db.collection("bookings").doc(bookingId).get();
+    const updatedData = updatedDoc.data()!;
+    console.log(`[updatePaymentStatus] ✅ Payment status updated successfully:`, {
+      bookingId: bookingId,
+      newStatus: updatedData.status,
+      newPaymentStatus: updatedData.paymentStatus,
+      statusChanged: statusChanged,
+    });
 
     // Send notifications (don't await - fire and forget)
-    if (bookingData.paymentStatus !== paymentStatus) {
-      const { sendPaymentStatusNotification } = await import("./notificationService.js");
-      // Fire and forget - don't block payment update if notification fails
-      // Only send notification for valid statuses (paid, unpaid, pending)
-      if (paymentStatus === "paid" || paymentStatus === "pending") {
-        sendPaymentStatusNotification(
+    // If status changed from PendingPayment to Created AND payment is paid, send ONE consolidated notification
+    // Otherwise, send separate notifications
+    if (statusChanged && paymentStatus === "paid") {
+      // Send ONE consolidated notification for successful payment + booking confirmation
+      const { sendNotificationToUser } = await import("./notificationService");
+      sendNotificationToUser(bookingData.userId, {
+        title: "Payment Successful & Booking Confirmed",
+        body: `Your payment for booking ${bookingData.trackingNumber} has been received and your booking is confirmed!`,
+        data: {
+          type: "payment_success",
+          bookingId: bookingId,
+          trackingNumber: bookingData.trackingNumber,
+          paymentStatus: "paid",
+          status: "Created",
+        },
+      }).catch((err: any) => {
+        console.error("Failed to send consolidated payment success notification:", err);
+      });
+    } else {
+      // Send separate notifications for other cases
+      if (bookingData.paymentStatus !== paymentStatus) {
+        const { sendPaymentStatusNotification } = await import("./notificationService");
+        // Fire and forget - don't block payment update if notification fails
+        // Only send notification for valid statuses (paid, unpaid, pending)
+        if (paymentStatus === "paid" || paymentStatus === "pending") {
+          sendPaymentStatusNotification(
+            bookingData.userId,
+            bookingId,
+            paymentStatus === "paid" ? "paid" : "pending"
+          ).catch((err: any) => {
+            console.error("Failed to send payment status notification:", err);
+          });
+        }
+      }
+
+      // If booking status changed from PendingPayment to Created (but payment wasn't just paid), send booking status notification
+      if (statusChanged && paymentStatus !== "paid") {
+        const { sendBookingStatusNotification } = await import("./notificationService");
+        // Fire and forget - don't block payment update if notification fails
+        sendBookingStatusNotification(
           bookingData.userId,
           bookingId,
-          paymentStatus === "paid" ? "paid" : "pending"
-        ).catch((err: any) => {
-          console.error("Failed to send payment status notification:", err);
+          bookingData.trackingNumber,
+          "PendingPayment",
+          "Created"
+        ).catch((err) => {
+          console.error("Failed to send booking status notification:", err);
         });
       }
-    }
-
-    // If booking status changed from PendingPayment to Created, send booking status notification
-    if (statusChanged) {
-      const { sendBookingStatusNotification } = await import("./notificationService.js");
-      // Fire and forget - don't block payment update if notification fails
-      sendBookingStatusNotification(
-        bookingData.userId,
-        bookingId,
-        bookingData.trackingNumber,
-        "PendingPayment",
-        "Created"
-      ).catch((err) => {
-        console.error("Failed to send booking status notification:", err);
-      });
     }
   } catch (error: any) {
     console.error("Error updating payment status:", error);
@@ -955,6 +1060,7 @@ export const getBookingStatistics = async (): Promise<{
       Shipped: 0,
       Delivered: 0,
       Returned: 0,
+      Cancelled: 0,
     };
 
     const byPaymentStatus: Record<PaymentStatus, number> = {

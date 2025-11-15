@@ -9,7 +9,11 @@ import NodeCache from "node-cache";
 const cache = new NodeCache({
   stdTTL: 300, // 5 minutes default TTL
   checkperiod: 60, // Check for expired keys every 60 seconds
+  useClones: false, // Don't clone values (better performance for strings)
 });
+
+// Log cache creation for debugging
+console.log("📦 Cache service initialized at:", new Date().toISOString());
 
 export const cacheService = {
   /**

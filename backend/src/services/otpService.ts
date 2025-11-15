@@ -108,14 +108,35 @@ const normalizePhoneNumber = (phoneNumber: string): string => {
  */
 export const sendOTP = async (phoneNumber: string): Promise<void> => {
   try {
+    // Normalize phone number for consistent cache key
+    const normalizedPhone = normalizePhoneNumber(phoneNumber);
+    
+    // ============================================================================
+    // PLAY STORE TESTING BYPASS
+    // For phone number 9999999999, skip SMS sending (OTP 123456 will always work)
+    // ============================================================================
+    const testPhoneNumber = "+919999999999"; // Normalized format
+    if (normalizedPhone === testPhoneNumber) {
+      console.log("=".repeat(60));
+      console.log("🧪 PLAY STORE TEST MODE - Test number detected");
+      console.log("=".repeat(60));
+      console.log(`📱 Phone Number: ${normalizedPhone}`);
+      console.log(`🔐 Test OTP Code: 123456 (always valid for this number)`);
+      console.log(`⏰ Valid for: Always (no expiry)`);
+      console.log("=".repeat(60));
+      console.log(`✅ Test OTP mode activated. Use OTP: 123456`);
+      console.log("=".repeat(60));
+      // Don't store anything in cache - verification will bypass cache for this number
+      return; // Exit early - no SMS sent, no cache storage needed
+    }
+
     // Generate 6-digit OTP
     const otp = generateOTP();
 
-    // Normalize phone number for consistent cache key
-    const normalizedPhone = normalizePhoneNumber(phoneNumber);
-
     // Store OTP in cache for 10 minutes (use normalized phone as key)
-    cacheService.setOTP(normalizedPhone, otp, 600);
+    const stored = cacheService.setOTP(normalizedPhone, otp, 600);
+    console.log(`💾 OTP cache set result: ${stored}, key: ${normalizedPhone}, TTL: 600s`);
+    console.log(`🔍 Current cache keys after storing:`, cacheService.getAllKeys());
 
     // Extract 10-digit phone number (without country code)
     const phone = extractPhoneNumber(phoneNumber);
@@ -257,10 +278,42 @@ export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
     // Normalize phone number to match the key used when storing OTP
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     
+    // ============================================================================
+    // PLAY STORE TESTING BYPASS
+    // For phone number 9999999999, always accept OTP 123456
+    // ============================================================================
+    const testPhoneNumber = "+919999999999"; // Normalized format
+    if (normalizedPhone === testPhoneNumber && otp === "123456") {
+      console.log(`✅ PLAY STORE TEST MODE: Accepting OTP 123456 for test number ${normalizedPhone}`);
+      // Delete any existing OTP from cache if present
+      if (cacheService.hasOTP(normalizedPhone)) {
+        cacheService.deleteOTP(normalizedPhone);
+      }
+      return true;
+    }
+    
+    console.log(`🔍 Verifying OTP for: ${normalizedPhone}`);
+    console.log(`🔍 Current cache keys before lookup:`, cacheService.getAllKeys());
+    console.log(`🔍 Cache has key ${normalizedPhone}:`, cacheService.hasOTP(normalizedPhone));
+    
     const storedOTP = cacheService.getOTP(normalizedPhone);
 
     if (!storedOTP) {
-      console.log(`OTP not found for ${normalizedPhone}. Available keys:`, cacheService.getAllKeys?.() || "N/A");
+      const allKeys = cacheService.getAllKeys();
+      console.log(`❌ OTP not found for ${normalizedPhone}`);
+      console.log(`❌ Available cache keys:`, allKeys);
+      console.log(`❌ Cache stats:`, {
+        hasKey: cacheService.hasOTP(normalizedPhone),
+        allKeys: allKeys,
+        keyCount: allKeys.length,
+        normalizedPhone: normalizedPhone
+      });
+      
+      // Check if server might have restarted (cache is empty)
+      if (allKeys.length === 0) {
+        console.warn(`⚠️  Cache is empty - server may have restarted. OTP was lost.`);
+      }
+      
       return false; // OTP not found or expired
     }
 

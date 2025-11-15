@@ -1,0 +1,577 @@
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+Environment variables loaded from the "production" build profile "env" configuration: EXPO_PUBLIC_FIREBASE_API_KEY, EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN, EXPO_PUBLIC_FIREBASE_PROJECT_ID, EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET, EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID, EXPO_PUBLIC_FIREBASE_APP_ID, EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID, EXPO_PUBLIC_API_BASE_URL, ONESIGNAL_APP_ID.
+
+⠋ Incrementing versionCode from 38 to 39.⠙ Incrementing versionCode from 38 to 39.⠹ Incrementing versionCode from 38 to 39.⠸ Incrementing versionCode from 38 to 39.⠼ Incrementing versionCode from 38 to 39.⠴ Incrementing versionCode from 38 to 39.⠦ Incrementing versionCode from 38 to 39.⠧ Incrementing versionCode from 38 to 39.⠇ Incrementing versionCode from 38 to 39.⠏ Incrementing versionCode from 38 to 39.⠋ Incrementing versionCode from 38 to 39.⠙ Incrementing versionCode from 38 to 39.⠹ Incrementing versionCode from 38 to 39.⠸ Incrementing versionCode from 38 to 39.⠼ Incrementing versionCode from 38 to 39.⠴ Incrementing versionCode from 38 to 39.✔ Incremented versionCode from 38 to 39.
+You need to be on SDK 46 or higher, and use expo-updates >= 0.14.4 to use appVersion runtime policy.
+android.versionCode field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+✔ Using remote Android credentials (Expo server)
+✔ Using Keystore from configuration: Build Credentials -CEqHSi4H4 (default)
+⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files⠴ Compressing project files⠦ Compressing project files⠧ Compressing project files⠇ Compressing project files⠏ Compressing project files⠋ Compressing project files⠙ Compressing project files⠹ Compressing project files⠸ Compressing project files⠼ Compressing project files✔ Compressed project files 19s (2.6 MB)
+⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⌛️ Computing the project fingerprint is taking longer than expected...
+⠋ Computing project fingerprint⏩ To skip this step, set the environment variable: EAS_SKIP_AUTO_FINGERPRINT=1
+⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint⠙ Computing project fingerprint⠹ Computing project fingerprint⠸ Computing project fingerprint⠼ Computing project fingerprint⠴ Computing project fingerprint⠦ Computing project fingerprint⠧ Computing project fingerprint⠇ Computing project fingerprint⠏ Computing project fingerprint⠋ Computing project fingerprint✔ Computed project fingerprint
+[SETUP_WORKINGDIR] Preparing workingdir /tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6
+[START_BUILD] Starting build
+  "job": {
+    "type": "managed",
+    "platform": "android",
+    "projectRootDirectory": "parcelbooking",
+    "projectArchive": {
+      "type": "PATH",
+      "path": "/tmp/yashv/eas-cli-nodejs/b659ad2a-41fe-4642-a001-9bf94f934fa6.tar.gz"
+    },
+    "builderEnvironment": {
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyASPIuyXkbRPLBTWnJWIQJXMUSnuvm50Yc",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "parcelwalla-66730.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "parcelwalla-66730",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "parcelwalla-66730.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "617047895561",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:617047895561:web:e35fb7a906bf7b84c292d8",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-R88Y2VM0G3",
+        "EXPO_PUBLIC_API_BASE_URL": "https://parcelwalah.in",
+        "ONESIGNAL_APP_ID": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
+      }
+    },
+    "cache": {
+      "disabled": false,
+      "paths": [],
+      "clear": false
+    },
+    "updates": {},
+    "buildType": "app-bundle",
+    "username": "yashvardhan001-2",
+    "version": {
+      "versionCode": "39"
+    },
+    "experimental": {},
+    "mode": "build",
+    "triggeredBy": "EAS_CLI",
+    "appId": "d6c7139a-de05-4408-8edf-5db1e53b983f",
+    "initiatingUserId": "2aa9ca5c-9457-4e47-b085-728bc28fad60"
+  }
+Local build, skipping project archive refresh
+[READ_PACKAGE_JSON] Using package.json:
+[READ_PACKAGE_JSON] {
+  "name": "parcelwalla",
+  "slug": "parcelbooking-clean",
+  "main": "expo-router/entry",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "expo start",
+    "reset-project": "node ./scripts/reset-project.js",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "lint": "expo lint"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "^8.5.0",
+    "@react-navigation/bottom-tabs": "^7.4.0",
+    "@react-navigation/elements": "^2.6.3",
+    "@react-navigation/native": "^7.1.8",
+    "expo": "~54.0.20",
+    "expo-constants": "~18.0.10",
+    "expo-dev-client": "~6.0.17",
+    "expo-font": "~14.0.9",
+    "expo-haptics": "~15.0.7",
+    "expo-image": "~3.0.10",
+    "expo-linking": "~8.0.8",
+    "expo-notifications": "^0.32.12",
+    "expo-router": "~6.0.13",
+    "expo-sharing": "^14.0.7",
+    "expo-splash-screen": "~31.0.10",
+    "expo-status-bar": "~3.0.8",
+    "expo-symbols": "~1.0.7",
+    "expo-system-ui": "~6.0.8",
+    "expo-web-browser": "~15.0.8",
+    "firebase": "^10.13.0",
+    "onesignal-expo-plugin": "^2.0.3",
+    "onesignal-node": "^3.4.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-onesignal": "^5.2.14",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-view-shot": "4.0.3",
+    "react-native-web": "~0.21.0",
+    "react-native-worklets": "0.5.1",
+    "react-onesignal": "^3.4.0",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "eslint": "^9.25.0",
+    "eslint-config-expo": "~10.0.0",
+    "nativewind": "^4.0.1",
+    "tailwindcss": "^3.4.1",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
+[INSTALL_DEPENDENCIES] Running "npm ci --include=dev" in /tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking directory
+[INSTALL_DEPENDENCIES] npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+[INSTALL_DEPENDENCIES] npm warn deprecated har-validator@5.1.5: this library is no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated request-promise@4.2.6: request-promise has been deprecated because it extends the now deprecated request package, see https://github.com/request/request/issues/3142
+[INSTALL_DEPENDENCIES] npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+[INSTALL_DEPENDENCIES] npm warn deprecated uuid@3.4.0: Please upgrade  to version 7 or higher.  Older versions may use Math.random() in certain circumstances, which is known to be problematic.  See https://v8.dev/blog/math-random for details.
+[INSTALL_DEPENDENCIES] npm warn deprecated request@2.88.2: request has been deprecated, see https://github.com/request/request/issues/3142
+[INSTALL_DEPENDENCIES] added 1153 packages, and audited 1154 packages in 22s
+[INSTALL_DEPENDENCIES] 
+[INSTALL_DEPENDENCIES] 188 packages are looking for funding
+[INSTALL_DEPENDENCIES]   run `npm fund` for details
+[INSTALL_DEPENDENCIES] 19 vulnerabilities (14 moderate, 3 high, 2 critical)
+[INSTALL_DEPENDENCIES] 
+[INSTALL_DEPENDENCIES] To address issues that do not require attention, run:
+[INSTALL_DEPENDENCIES]   npm audit fix
+[INSTALL_DEPENDENCIES] 
+[INSTALL_DEPENDENCIES] To address all issues possible (including breaking changes), run:
+[INSTALL_DEPENDENCIES]   npm audit fix --force
+[INSTALL_DEPENDENCIES] 
+[INSTALL_DEPENDENCIES] Some issues need review, and may require choosing
+[INSTALL_DEPENDENCIES] a different dependency.
+[INSTALL_DEPENDENCIES] 
+[INSTALL_DEPENDENCIES] Run `npm audit` for details.
+The NODE_ENV environment variable is required but was not specified. Ensure the project is bundled with Expo CLI or NODE_ENV is set.
+Proceeding without mode-specific .env
+[READ_APP_CONFIG] Using app configuration:
+[READ_APP_CONFIG] {
+  "name": "parcelbooking",
+  "slug": "parcelbooking",
+  "version": "1.0.0",
+  "sdkVersion": "54.0.0",
+  "orientation": "portrait",
+  "icon": "./assets/images/parcelwalla.png",
+  "scheme": "parcelbooking",
+  "userInterfaceStyle": "automatic",
+  "newArchEnabled": true,
+  "runtimeVersion": {
+    "policy": "appVersion"
+  },
+  "ios": {
+    "supportsTablet": true,
+    "bundleIdentifier": "com.ratlam.parcelbooking"
+  },
+  "android": {
+    "package": "com.ratlam.parcelbooking",
+    "versionCode": 1,
+    "googleServicesFile": "./google-services.json",
+    "adaptiveIcon": {
+      "backgroundColor": "#FF6B35",
+      "foregroundImage": "./assets/images/parcelwalla.png"
+    },
+    "edgeToEdgeEnabled": true,
+    "predictiveBackGestureEnabled": false,
+    "notification": {
+      "icon": "./assets/images/parcelwalla.png",
+      "color": "#FF6B35"
+    },
+    "intentFilters": [
+      {
+        "action": "VIEW",
+        "autoVerify": true,
+        "data": [
+          {
+            "scheme": "parcelbooking",
+            "host": "payment"
+          }
+        ],
+        "category": [
+          "BROWSABLE",
+          "DEFAULT"
+        ]
+      }
+    ],
+    "usesCleartextTraffic": true
+  },
+  "web": {
+    "output": "static",
+    "favicon": "./assets/images/parcelwalla.png"
+  },
+  "plugins": [
+    "expo-router",
+    "expo-notifications",
+    [
+      "onesignal-expo-plugin",
+      {
+        "mode": "production"
+      }
+    ],
+    [
+      "expo-splash-screen",
+      {
+        "image": "./assets/images/parcelwalla.png",
+        "imageWidth": 200,
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff",
+        "dark": {
+          "backgroundColor": "#1a1a1a"
+        }
+      }
+    ]
+  ],
+  "experiments": {
+    "typedRoutes": true,
+    "reactCompiler": true
+  },
+  "extra": {
+    "router": {},
+    "eas": {
+      "projectId": "d6c7139a-de05-4408-8edf-5db1e53b983f",
+      "build": {
+        "experimental": {
+          "ios": {
+            "appExtensions": [
+              {
+                "targetName": "OneSignalNotificationServiceExtension",
+                "bundleIdentifier": "com.ratlam.parcelbooking.OneSignalNotificationServiceExtension",
+                "entitlements": {
+                  "com.apple.security.application-groups": [
+                    "group.com.ratlam.parcelbooking.onesignal"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "onesignal": {
+      "appId": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
+    }
+  },
+  "projectRoot": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking",
+  "staticConfigPath": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/app.json",
+  "packageJsonPath": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/package.json",
+  "config": {
+    "name": "parcelbooking",
+    "slug": "parcelbooking",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/parcelwalla.png",
+    "scheme": "parcelbooking",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ratlam.parcelbooking"
+    },
+    "android": {
+      "package": "com.ratlam.parcelbooking",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "backgroundColor": "#FF6B35",
+        "foregroundImage": "./assets/images/parcelwalla.png"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "notification": {
+        "icon": "./assets/images/parcelwalla.png",
+        "color": "#FF6B35"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "parcelbooking",
+              "host": "payment"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/parcelwalla.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/parcelwalla.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff",
+          "dark": {
+            "backgroundColor": "#1a1a1a"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d6c7139a-de05-4408-8edf-5db1e53b983f"
+      },
+      "onesignal": {
+        "appId": "0f28bb2e-e63e-4bfa-9710-77dcaf7b3aa7"
+      }
+    },
+    "_internal": {
+      "isDebug": false,
+      "projectRoot": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking",
+      "dynamicConfigPath": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/app.config.js",
+      "staticConfigPath": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/app.json",
+      "packageJsonPath": "/tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/package.json"
+    },
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ]
+  },
+  "platforms": [
+    "ios",
+    "android",
+    "web"
+  ],
+  "androidStatusBar": {
+    "backgroundColor": "#ffffff"
+  }
+}
+[RUN_EXPO_DOCTOR] Running "expo doctor"
+[RUN_EXPO_DOCTOR] Running 17 checks on your project...
+[RUN_EXPO_DOCTOR] 13/17 checks passed. 4 checks failed. Possible issues detected:
+[RUN_EXPO_DOCTOR] Use the --verbose flag to see more details about passed checks.
+[RUN_EXPO_DOCTOR] ✖ Check for common project setup issues
+[RUN_EXPO_DOCTOR] The .expo directory is not ignored by Git. It contains machine-specific device history and development server settings and should not be committed.
+[RUN_EXPO_DOCTOR] Advice:
+[RUN_EXPO_DOCTOR] Add ".expo/" to your .gitignore to avoid committing local Expo state.
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] ✖ Check Expo config (app.json/ app.config.js) schema
+[RUN_EXPO_DOCTOR] Errors validating fields in /tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/app.json:
+[RUN_EXPO_DOCTOR]  should NOT have additional property 'projectRoot'.
+[RUN_EXPO_DOCTOR]  should NOT have additional property 'staticConfigPath'.
+[RUN_EXPO_DOCTOR]  should NOT have additional property 'packageJsonPath'.
+[RUN_EXPO_DOCTOR]  should NOT have additional property 'config'.
+[RUN_EXPO_DOCTOR]  Field: android - should NOT have additional property 'notification'.
+[RUN_EXPO_DOCTOR]  Field: android - should NOT have additional property 'usesCleartextTraffic'.
+[RUN_EXPO_DOCTOR] Advice:
+[RUN_EXPO_DOCTOR] Resolve schema errors in your app config. Learn more: https://docs.expo.dev/workflow/configuration/
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] ✖ Check Expo config for common issues
+[RUN_EXPO_DOCTOR] You have an app.json file in your project, but your app.config.js is not using the values from it.
+[RUN_EXPO_DOCTOR] Advice:
+[RUN_EXPO_DOCTOR] Remove the static app.json, or use its values in your dynamic app.config.js. Learn more: https://docs.expo.dev/workflow/configuration
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] ✖ Check that packages match versions required by installed Expo SDK
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] ⚠️ Minor version mismatches
+[RUN_EXPO_DOCTOR] package                                 expected  found  
+[RUN_EXPO_DOCTOR] @react-native-community/datetimepicker  8.4.4     8.5.0  
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] 
+[RUN_EXPO_DOCTOR] 1 package out of date.
+[RUN_EXPO_DOCTOR] Advice:
+[RUN_EXPO_DOCTOR] Use 'npx expo install --check' to review and upgrade your dependencies.
+[RUN_EXPO_DOCTOR] To ignore specific packages, add them to "expo.install.exclude" in package.json. Learn more: https://expo.fyi/dependency-validation
+[RUN_EXPO_DOCTOR] 4 checks failed, indicating possible issues with the project.
+[RUN_EXPO_DOCTOR] Command "expo doctor" failed.
+Error: npx -y expo-doctor exited with non-zero code: 1
+    at ChildProcess.completionListener (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/spawn-async/build/spawnAsync.js:42:23)
+    at Object.onceWrapper (node:events:639:26)
+    at ChildProcess.emit (node:events:524:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+    ...
+    at spawnAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/spawn-async/build/spawnAsync.js:7:23)
+    at spawn (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/turtle-spawn/dist/index.js:16:47)
+    at runExpoDoctor (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/common/setup.js:124:52)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async /home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/common/setup.js:103:17
+    at async BuildContext.runBuildPhase (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/context.js:123:28)
+    at async setupAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/common/setup.js:101:9)
+    at async buildAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/android.js:72:5)
+    at async runBuilderWithHooksAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/common.js:12:13)
+    at async Object.androidBuilder (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/android.js:59:16)
+[PREBUILD] - Creating native directory (./android)
+[PREBUILD] ✔ Created native directory
+[PREBUILD] - Updating package.json
+[PREBUILD] ✔ Updated package.json | no changes
+[PREBUILD] - Running prebuild
+[PREBUILD] ✔ Finished prebuild
+[PREBUILD] Running "npm install" in /tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking directory
+[PREBUILD] up to date, audited 1154 packages in 3s
+[PREBUILD] 188 packages are looking for funding
+[PREBUILD]   run `npm fund` for details
+[PREBUILD] 19 vulnerabilities (14 moderate, 3 high, 2 critical)
+[PREBUILD] 
+[PREBUILD] To address issues that do not require attention, run:
+[PREBUILD]   npm audit fix
+[PREBUILD] 
+[PREBUILD] To address all issues possible (including breaking changes), run:
+[PREBUILD]   npm audit fix --force
+[PREBUILD] 
+[PREBUILD] Some issues need review, and may require choosing
+[PREBUILD] a different dependency.
+[PREBUILD] 
+[PREBUILD] Run `npm audit` for details.
+[PREPARE_CREDENTIALS] Writing secrets to the project's directory
+[PREPARE_CREDENTIALS] Injecting signing config into build.gradle
+[EAGER_BUNDLE] React Compiler enabled
+[EAGER_BUNDLE] Starting Metro Bundler
+[EAGER_BUNDLE] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.1% (358/565)
+[EAGER_BUNDLE] Android Bundled 1598ms node_modules/expo-router/entry.js (1584 modules)
+[EAGER_BUNDLE] Writing bundle output to: /tmp/ne9my1oitt/index.js
+[EAGER_BUNDLE] Copying 46 asset files
+[EAGER_BUNDLE] Done writing bundle output
+[RUN_GRADLEW] Running 'gradlew :app:bundleRelease' in /tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/android
+[RUN_GRADLEW] Starting a Gradle Daemon, 1 incompatible Daemon could not be reused, use --status for details
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :gradle-plugin:shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:processResources
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:processResources
+[RUN_GRADLEW] > Task :gradle-plugin:shared:processResources NO-SOURCE
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:processResources NO-SOURCE
+[RUN_GRADLEW] > Task :gradle-plugin:shared:compileKotlin
+[RUN_GRADLEW] > Task :gradle-plugin:shared:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :gradle-plugin:shared:classes UP-TO-DATE
+[RUN_GRADLEW] > Task :gradle-plugin:shared:jar
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileKotlin
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:classes UP-TO-DATE
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin-shared:jar
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:compileKotlin
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:classes
+[RUN_GRADLEW] > Task :gradle-plugin:settings-plugin:jar
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileKotlin
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:classes
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-settings-plugin:jar
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:checkKotlinGradlePluginConfigurationErrors SKIPPED
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:processResources
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:processResources
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:processResources
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:pluginDescriptors
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:processResources
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:compileKotlin
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:classes
+[RUN_GRADLEW] > Task :expo-gradle-plugin:expo-autolinking-plugin:jar
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:compileKotlin
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:classes
+[RUN_GRADLEW] > Task :gradle-plugin:react-native-gradle-plugin:jar
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:compileKotlin
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:classes
+[RUN_GRADLEW] > Task :expo-dev-launcher-gradle-plugin:jar
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:compileKotlin
+[RUN_GRADLEW] w: file:///tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/node_modules/expo-modules-core/expo-module-gradle-plugin/src/main/kotlin/expo/modules/plugin/android/AndroidLibraryExtension.kt:9:24 'var targetSdk: Int?' is deprecated. Will be removed from library DSL in v9.0. Use testOptions.targetSdk or/and lint.targetSdk instead.
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:compileJava NO-SOURCE
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:classes
+[RUN_GRADLEW] > Task :expo-module-gradle-plugin:jar
+[RUN_GRADLEW] > Configure project :
+[RUN_GRADLEW] [32m[ExpoRootProject][0m Using the following versions:
+[RUN_GRADLEW]   - buildTools:  [32m36.0.0[0m
+[RUN_GRADLEW]   - minSdk:      [32m24[0m
+[RUN_GRADLEW]   - compileSdk:  [32m36[0m
+[RUN_GRADLEW]   - targetSdk:   [32m36[0m
+[RUN_GRADLEW]   - ndk:         [32m27.1.12297006[0m
+[RUN_GRADLEW]   - kotlin:      [32m2.1.20[0m
+[RUN_GRADLEW]   - ksp:         [32m2.1.20-2.0.1[0m
+[RUN_GRADLEW] > Configure project :app
+[RUN_GRADLEW] ℹ️  [33mApplying gradle plugin[0m '[32mexpo-dev-launcher-gradle-plugin[0m'
+[RUN_GRADLEW] > Configure project :expo
+[RUN_GRADLEW] Using expo modules
+[RUN_GRADLEW]   - [32mexpo-constants[0m (18.0.10)
+[RUN_GRADLEW] - [32mexpo-dev-client[0m (6.0.17)
+[RUN_GRADLEW]   - [32mexpo-dev-launcher[0m (6.0.17)
+[RUN_GRADLEW]   - [32mexpo-dev-menu[0m (7.0.16)
+[RUN_GRADLEW]   - [32mexpo-dev-menu-interface[0m (2.0.0)
+[RUN_GRADLEW]   - [32mexpo-json-utils[0m (0.15.0)
+[RUN_GRADLEW]   - [32mexpo-manifests[0m (1.0.8)
+[RUN_GRADLEW] - [32mexpo-modules-core[0m (3.0.25)
+[RUN_GRADLEW] - [32mexpo-updates-interface[0m (2.0.0)
+[RUN_GRADLEW] - [33m[📦][0m [32mexpo-application[0m (7.0.7)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-asset[0m (12.0.9)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-file-system[0m (19.0.17)
+[RUN_GRADLEW] - [33m[📦][0m [32mexpo-font[0m (14.0.9)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-haptics[0m (15.0.7)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-image[0m (3.0.10)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-keep-awake[0m (15.0.7)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-linking[0m (8.0.8)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-notifications[0m (0.32.12)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-sharing[0m (14.0.7)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-splash-screen[0m (31.0.10)
+[RUN_GRADLEW] - [33m[📦][0m [32mexpo-system-ui[0m (6.0.8)
+[RUN_GRADLEW]   - [33m[📦][0m [32mexpo-web-browser[0m (15.0.9)
+[RUN_GRADLEW] Build-tool 36.0.0 is missing AAPT at /mnt/c/Users/yashv/AppData/Local/Android/Sdk/build-tools/36.0.0/aapt
+[RUN_GRADLEW] Build-tool 36.0.0 is missing AAPT at /mnt/c/Users/yashv/AppData/Local/Android/Sdk/build-tools/36.0.0/aapt
+[RUN_GRADLEW] [Incubating] Problems report is available at: file:///tmp/yashv/eas-build-local-nodejs/056c36e2-87e7-4837-8258-342e6b4655b6/build/parcelbooking/android/build/reports/problems/problems-report.html
+[RUN_GRADLEW] FAILURE: Build failed with an exception.
+[RUN_GRADLEW] * What went wrong:
+[RUN_GRADLEW] Could not determine the dependencies of task ':app:bundleReleaseResources'.
+[RUN_GRADLEW] > Installed Build Tools revision 36.0.0 is corrupted. Remove and install again using the SDK Manager.
+[RUN_GRADLEW] * Try:
+[RUN_GRADLEW] > Run with --stacktrace option to get the stack trace.
+[RUN_GRADLEW] > Run with --info or --debug option to get more log output.
+[RUN_GRADLEW] > Run with --scan to get full insights.
+[RUN_GRADLEW] > Get more help at https://help.gradle.org
+[RUN_GRADLEW] Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+[RUN_GRADLEW] You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+[RUN_GRADLEW] For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+[RUN_GRADLEW] 28 actionable tasks: 28 executed
+[RUN_GRADLEW] BUILD FAILED in 3m 15s
+[RUN_GRADLEW] Error: Gradle build failed with unknown error. See logs for the "Run gradlew" phase for more information.
+
+Build failed
+Gradle build failed with unknown error. See logs for the "Run gradlew" phase for more information.
+Error: Gradle build failed with unknown error. See logs for the "Run gradlew" phase for more information.
+    at resolveBuildPhaseErrorAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/buildErrors/detectError.js:69:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async BuildContext.handleBuildPhaseErrorAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/context.js:192:28)
+    at async BuildContext.runBuildPhase (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/context.js:135:35)
+    at async buildAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/android.js:183:5)
+    at async runBuilderWithHooksAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/common.js:12:13)
+    at async Object.androidBuilder (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/@expo/build-tools/dist/builders/android.js:59:16)
+    at async buildAndroidAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/eas-cli-local-build-plugin/dist/android.js:44:12)
+    at async buildAsync (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/eas-cli-local-build-plugin/dist/build.js:55:29)
+    at async main (/home/yashv/.npm/_npx/51b74c4db9e60cb6/node_modules/eas-cli-local-build-plugin/dist/main.js:16:9)
+npx -y eas-cli-local-build-plugin@1.0.243 eyJqb2IiOnsidHlwZSI6Im1hbmFnZWQiLCJwbGF0Zm9ybSI6ImFuZHJvaWQiLCJwcm9qZWN0Um9vdERpcmVjdG9yeSI6InBhcmNlbGJvb2tpbmciLCJwcm9qZWN0QXJjaGl2ZSI6eyJ0eXBlIjoiUEFUSCIsInBhdGgiOiIvdG1wL3lhc2h2L2Vhcy1jbGktbm9kZWpzL2I2NTlhZDJhLTQxZmUtNDY0Mi1hMDAxLTliZjk0ZjkzNGZhNi50YXIuZ3oifSwiYnVpbGRlckVudmlyb25tZW50Ijp7ImVudiI6eyJFWFBPX1BVQkxJQ19GSVJFQkFTRV9BUElfS0VZIjoiQUl6YVN5QVNQSXV5WGtiUlBMQlRXbkpXSVFKWE1VU251dm01MFljIiwiRVhQT19QVUJMSUNfRklSRUJBU0VfQVVUSF9ET01BSU4iOiJwYXJjZWx3YWxsYS02NjczMC5maXJlYmFzZWFwcC5jb20iLCJFWFBPX1BVQkxJQ19GSVJFQkFTRV9QUk9KRUNUX0lEIjoicGFyY2Vsd2FsbGEtNjY3MzAiLCJFWFBPX1BVQkxJQ19GSVJFQkFTRV9TVE9SQUdFX0JVQ0tFVCI6InBhcmNlbHdhbGxhLTY2NzMwLmZpcmViYXNlc3RvcmFnZS5hcHAiLCJFWFBPX1BVQkxJQ19GSVJFQkFTRV9NRVNTQUdJTkdfU0VOREVSX0lEIjoiNjE3MDQ3ODk1NTYxIiwiRVhQT19QVUJMSUNfRklSRUJBU0VfQVBQX0lEIjoiMTo2MTcwNDc4OTU1NjE6d2ViOmUzNWZiN2E5MDZiZjdiODRjMjkyZDgiLCJFWFBPX1BVQkxJQ19GSVJFQkFTRV9NRUFTVVJFTUVOVF9JRCI6IkctUjg4WTJWTTBHMyIsIkVYUE9fUFVCTElDX0FQSV9CQVNFX1VSTCI6Imh0dHBzOi8vcGFyY2Vsd2FsYWguaW4iLCJPTkVTSUdOQUxfQVBQX0lEIjoiMGYyOGJiMmUtZTYzZS00YmZhLTk3MTAtNzdkY2FmN2IzYWE3In19LCJjYWNoZSI6eyJkaXNhYmxlZCI6ZmFsc2UsInBhdGhzIjpbXSwiY2xlYXIiOmZhbHNlfSwic2VjcmV0cyI6eyJidWlsZENyZWRlbnRpYWxzIjp7ImtleXN0b3JlIjp7ImRhdGFCYXNlNjQiOiIvdTMrN1FBQUFBSUFBQUFCQUFBQUFRQWdNV1V6TlRKa1pEVm1NVE14TlRGbFlUUmtPRGRqWW1Wa1ptUTBNMlpsTWpFQUFBR2FUeXhnbXdBQUJRSXdnZ1QrTUE0R0Npc0dBUVFCS2dJUkFRRUZBQVNDQk9vOTRjU0g2a3hpd29TRXBGdDk4VjdIL3lLeUw4UHFyMTRBb1N1L2xLeng3MlhYZm9TTUlMdXVFSmFBQ1RwbFlEcFpEalV2OU5CclhYTTFOMTc3d1pJK25ZTFFLclEzNW1vMjV0Ti9MOVRPMjIzTWhyM2lNU1VyUUhNbjlMWGNVRTBjMWdTbGtMS0ttL29LVFFSSVZpRXNQZ2ZZMWQzWnJ5VjVtRERITDNoV0UyeDBZTUN4QkxzMTZVdno0c1g2VVc0MjRNa1U3MzNKZzA2RFhHYmdMSStwVTdQblArTG91VjZ3SjFJK3B5VUxSQmdVUktOREx3Nmp6dkIzaVA3MEFUOFNYV3ZRU0g1ejVvb1UvaitkdFpNVXQ5UXZRWmNpMSs5NXo3S2NKOHNaM3F5ZGIyRTM1OVczSUpJK3c5Rm12eWF6a3J2NE14NWlWalVHMTM1bHQzdFVZV2hieVI3bFdNR2lHbTV3RloyVkRDVjNTaDQ1aVRxbWZET2hxQnV4ZVBOdWg4Zm5UK0VsaDlJejU3dks3Y0RRRFV4RnoyZzMxK2xmbWlXV0FDWlJWcXJ4ZjZIMXBQQjNUWm55eDJhSy9HMVpyTW5uYlJ1aG1haDUyUnM0UDc2Q3lEZGpDZWJWODExOWtKWFlJSkNBSEhaRVFWb0EzK05nNVJabnIyM0xpcXVjc2RtaThzTVp2TDJscFM2bHlHb0tnamFQUWVEamRveFRUdzZaSTJCTG15bzlwaG94elE2ditsdHhZVmNrVUZad3VNWk40VC9zL0JVNDJEQUEvQ1MyUzdEY00xbzZRSVJRWWc2T25QQjY3dkd6NWc3QStjRTN3cFJLRjRZYjR2V01yY0loemtpdUxibHFlSlBLYlVOQTNaRmpOODZEZFhrY2MyR0crVW9qY21CdTJBa2FXOG91SHZVR2NCdmo4VEwvK21CRmtDaUgra01DZjZLaFFpYTY1dGdWMHZWbmdhaTZodDlRaEVDcjJ5dzNjdWRzdlR1bmF1RktWdFN1OEVLeTRBdzV4VzkvdHJwNnlSdDh5R0ZGYWFTdmpGTUdBdSs5eVVEZk5jL25IbC82SU9pdWU3Ny91NlRkcmdYMFlodzhQek1ZSE94VFAyVXlVTnNJMGdQVGxKT2s5L0NZdFgxeWtnZC83YU1JNnZZSDBNLzVCbk5BSGs3ZGQzRUVFSkJBK2FKaFBFeVBEbFRGOExuNGpkcjhsSytGZmZ4RXVpSXU5c2YvR0taR2VTb0FFbCsyMCtvcHBsWEhTdlJqOWdaQ1psQmhaUkRadXpjUEIxNjVFT24xZWtNTS9IY3E5M1RzVjY5UUJ3ZStjOEhxVUE0bUNzSmtjZmdGVS9YUzkxa0FRNjBlaHpWZU50alZUeGthcXFrQVBUaDhjOTFGZlhKRk41VDdtM0tZTkNBWlNzc09JSGRIdnZtUjRYZG4xWTNFTWdsUVYybkczL1RueFNvcXZzRTB5TEloSXNZalp6UEg0eTVkd0hBenJTaUNGQ2dXbXVuYm95V2RqZjQwQ2cwbHQ2WVBTVmRLbjlVczBHa29yTnZ4TmpyM0JYNlBWazJpT2YyWkNRWlY2Z2F2ZWo0dlBJeDIzL3RSL2hrbjV3SkY5SncvNDR4K2ptRlBmVnBRcndPRFlQU2R0cHdHL2JoQmlXUkE5YXZHNjc4aDY1WjFQUHRidXFZSkNTS3JZUGI1NlpreG9yd1dkYnpKeVFjaDU3eFcvOW5HSnQzbWw2ZHZCbWREbmRWY3U4SzdOd3FnekNubmszcFlVS3VRbGRUdzVjV1ozaWd0NS9EZGNOUmliMGkwNFVSZFlzU2R4SGJLT0ZVN0JKaXM5TUxqOFhKRjJYNW9pam02TWpIVWllZ1Q1UDV0V3NmbVFqcVN2c2hDdjFWdWtmRTlGcVlLcVlUOE0rSjlLQ1JoR0ZpMnFZK1FQc2NCWDkrWThyRHVsOGZrT0wza0tBRE1xZG5XTHhveFY4KzRwT0lrbEYzcmZhcEw2b2h3bWw2MTcyTWxoVVduNjZoMnRXeElsdGM5bmFVc3BhYzZwaHF1TTloSGJ5ejdNcEprVzY5bHJydUxrL1c2YVBQajFYL3M5ZzIxNHpISEY5ODNSREFnT0t3VzlTODZVdjZJb3NXTGlmOVZ0RS96emlzeXFwSmFKTXVtNXcwYi9JMWtLOXl4YTEvcUhCT2ZkRnhJaFc1YW85UXVqSnVRNTk3MmpCajN4TDZ1QUFBQUFRQUZXQzQxTURrQUFBTXlNSUlETGpDQ0FoYWdBd0lCQWdJSkFMYmNjK2lKRVovdk1BMEdDU3FHU0liM0RRRUJDd1VBTUVReEN6QUpCZ05WQkFZVEFsVlRNUWt3QndZRFZRUUlFd0F4Q1RBSEJnTlZCQWNUQURFSk1BY0dBMVVFQ2hNQU1Ra3dCd1lEVlFRTEV3QXhDVEFIQmdOVkJBTVRBREFnRncweU5URXhNRFF4TkRBeE16bGFHQTh5TURVek1ETXlNakUwTURFek9Wb3dSREVMTUFrR0ExVUVCaE1DVlZNeENUQUhCZ05WQkFnVEFERUpNQWNHQTFVRUJ4TUFNUWt3QndZRFZRUUtFd0F4Q1RBSEJnTlZCQXNUQURFSk1BY0dBMVVFQXhNQU1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0NBUUVBdW5pcHhuZlVVY3EzOVBVcWprNFQxd0ZjekVTWTZCQ1RibTNEMXpXaFo0SWxFb3lDbTNTZHRlbHJHUVcvZFFrakM0V1V1NldZaWhqUlhzY3d3OWlUOC9yMDNuU2VVeFB1SXhEWjhDWmk3bWJzK0FlQTZPWjFSZWk2YjRlS3FTUnJSMUtNWXFNMmFGazVPd0laWlArelNUeTRDN3U3b0ZEVXMrSVdGYTJPVWNQQzk3SjBqVVM1ZysrN09JZFBnQU9GOEVzRFNMK1I3MUw4UFVaZ3lkTTcwWkV1SXg3Q2JsZTd3UlJiVW9WQVhpVDRKbzR2Rm1xSWx1aWFJMjhPVGtxekU0OHhOTHJxL1RRMWVVREpPRUpzVkVIWGFhSHR6Kzg4ejNJdHg4L1VGL3l5alBWMDNmT2pzeGIwMXV0bFRmM0ZjYS9SRU9TWFFSY1gxUEJlK2t1b0N3SURBUUFCb3lFd0h6QWRCZ05WSFE0RUZnUVVFRWZES0owZTh5MkdLb2pjMGNZUmRjazRQMWt3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCQUYvcnFTc3hocHgvNUp3UDY2b0h1R21hTDA5Zm43Q0FLV1RJaUhqajRCdVQxTXFtbTQvNHU3YVVlc3VsR2pzalZqN1RabjFHUUtDeEVOcmQ4M3BJK0x0b3hFZ3BGQnhiT0pOSGx6MlNSaEhuSkhFdkxKK2d3ckFIdkxJSTlpeGpnZ1ZYZkpTNm04OXk5UkN4dzFPeE5WQ253VXptUlN4cVhXcVZVTjlINmFLelVlMXhIY1RmSTNtNGRmSkVjbHovdDEraCtCVjFCdnJvVnN1cS9WcWUyTk1nUlpaVVFRajNJWjVDN0p6aTk2N3dXUWZQaS9KTSt5UzE2Vk5TUnVsME9UdFVZeGpNbHBxMUtXZVk0cGRTWjk3WWFxdWtLdW80bVlncHo3dEMxRThrMThNYU4yNXc0OFU4L2NteDlYN2dLT0poNVEvMU5QWVg2ak12THFWZHlxQVE0dTlXOXRrTHNkc0pDRitDSGlWdUFwYWo2Zz09Iiwia2V5c3RvcmVQYXNzd29yZCI6Ijk5NDM2YWI3NzcxZTdmY2FlMzE1NTRhMDY3MDRkZGM3Iiwia2V5QWxpYXMiOiIxZTM1MmRkNWYxMzE1MWVhNGQ4N2NiZWRmZDQzZmUyMSIsImtleVBhc3N3b3JkIjoiMTljNGQ2MDJiODNmMGFiYTA4NDY3YWVlZTFiNzcwN2EifX19LCJ1cGRhdGVzIjp7fSwiYnVpbGRUeXBlIjoiYXBwLWJ1bmRsZSIsInVzZXJuYW1lIjoieWFzaHZhcmRoYW4wMDEtMiIsInZlcnNpb24iOnsidmVyc2lvbkNvZGUiOiIzOSJ9LCJleHBlcmltZW50YWwiOnt9LCJtb2RlIjoiYnVpbGQiLCJ0cmlnZ2VyZWRCeSI6IkVBU19DTEkiLCJhcHBJZCI6ImQ2YzcxMzlhLWRlMDUtNDQwOC04ZWRmLTVkYjFlNTNiOTgzZiIsImluaXRpYXRpbmdVc2VySWQiOiIyYWE5Y2E1Yy05NDU3LTRlNDctYjA4NS03MjhiYzI4ZmFkNjAifSwibWV0YWRhdGEiOnsidHJhY2tpbmdDb250ZXh0Ijp7InRyYWNraW5nX2lkIjoiODYxODA4ODYtNmQ2Ni00YzE3LWJmMzUtOWI4ZjM5M2QzMTVlIiwicGxhdGZvcm0iOiJhbmRyb2lkIiwic2RrX3ZlcnNpb24iOiI1NC4wLjAiLCJhY2NvdW50X2lkIjoiOGVkYzQ5ZTMtYmVhOC00OTJiLWFiYWItZjlkNTEzYjY0MjQ3IiwicHJvamVjdF9pZCI6ImQ2YzcxMzlhLWRlMDUtNDQwOC04ZWRmLTVkYjFlNTNiOTgzZiIsInByb2plY3RfdHlwZSI6Im1hbmFnZWQiLCJkZXZfY2xpZW50IjpmYWxzZSwiZGV2X2NsaWVudF92ZXJzaW9uIjoiNi4wLjE3Iiwibm9fd2FpdCI6ZmFsc2UsInJ1bl9mcm9tX2NpIjpmYWxzZSwibG9jYWwiOnRydWV9LCJhcHBCdWlsZFZlcnNpb24iOiIzOSIsImFwcFZlcnNpb24iOiIxLjAuMCIsImNsaVZlcnNpb24iOiIxNi4yNy4wIiwid29ya2Zsb3ciOiJtYW5hZ2VkIiwiY3JlZGVudGlhbHNTb3VyY2UiOiJyZW1vdGUiLCJzZGtWZXJzaW9uIjoiNTQuMC4wIiwicnVudGltZVZlcnNpb24iOiIxLjAuMCIsImZpbmdlcnByaW50SGFzaCI6IjQzNTk5NjM3OGEzN2E2MDgxNDU3NzJmYTE1YjAzMmE1MDcyNWUxN2UiLCJyZWFjdE5hdGl2ZVZlcnNpb24iOiIwLjgxLjUiLCJkaXN0cmlidXRpb24iOiJzdG9yZSIsImFwcE5hbWUiOiJwYXJjZWxib29raW5nIiwiYXBwSWRlbnRpZmllciI6ImNvbS5yYXRsYW0ucGFyY2VsYm9va2luZyIsImJ1aWxkUHJvZmlsZSI6InByb2R1Y3Rpb24iLCJnaXRDb21taXRIYXNoIjoiNTNiMWE3YTQyZWQ3OWM5NDUxNzhjMWUxZmEyYjZhNjA0MzVhMmIyZSIsImdpdENvbW1pdE1lc3NhZ2UiOiJlYXNpZ25vcmUgbW9kaWZpZWQgMSIsImlzR2l0V29ya2luZ1RyZWVEaXJ0eSI6dHJ1ZSwidXNlcm5hbWUiOiJ5YXNodmFyZGhhbjAwMS0yIiwicnVuV2l0aE5vV2FpdEZsYWciOmZhbHNlLCJydW5Gcm9tQ0kiOmZhbHNlLCJkZXZlbG9wbWVudENsaWVudCI6ZmFsc2UsInJlcXVpcmVkUGFja2FnZU1hbmFnZXIiOiJucG0iLCJzaW11bGF0b3IiOmZhbHNlfX0= exited with non-zero code: 1
+    Error: build command failed.

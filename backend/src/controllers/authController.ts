@@ -79,18 +79,20 @@ export const verifyOtp = async (
     const isValid = verifyOTP(phoneNumber, otp);
 
     if (!isValid) {
-      throw createError("Invalid or expired OTP", 401);
+      // Provide more helpful error message
+      throw createError("Invalid or expired OTP. Please request a new OTP.", 401);
     }
 
     // Check if user exists
     const existingUser = await getUserByPhoneNumber(phoneNumber);
     
-    // If user doesn't exist and name is not provided, return requiresName flag
+    // If user doesn't exist and name is not provided, tell them to sign up
     if (!existingUser && (!name || typeof name !== "string" || name.trim().length === 0)) {
       return res.status(200).json({
-        success: true,
+        success: false,
+        requiresSignup: true,
         requiresName: true,
-        message: "Name is required for new users",
+        message: "User not found. Please sign up with your name to create an account.",
       });
     }
 

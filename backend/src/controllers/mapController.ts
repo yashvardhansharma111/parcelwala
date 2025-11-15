@@ -50,15 +50,19 @@ export const getDetails = async (
   try {
     const { lat, lon } = req.body;
 
-    if (typeof lat !== "number" || typeof lon !== "number") {
-      throw createError("Latitude and longitude must be numbers", 400);
+    // Convert string numbers to numbers if needed (frontend may send strings)
+    const latitude = typeof lat === "string" ? parseFloat(lat) : lat;
+    const longitude = typeof lon === "string" ? parseFloat(lon) : lon;
+
+    if (typeof latitude !== "number" || typeof longitude !== "number" || isNaN(latitude) || isNaN(longitude)) {
+      throw createError("Latitude and longitude must be valid numbers", 400);
     }
 
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
       throw createError("Invalid coordinates", 400);
     }
 
-    const addressDetails = await getAddressDetails(lat, lon);
+    const addressDetails = await getAddressDetails(latitude, longitude);
 
     res.json({
       success: true,

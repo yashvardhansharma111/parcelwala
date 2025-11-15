@@ -92,9 +92,106 @@ const createOrUpdateOneSignalPlayer = async (
       }
     } else {
       // This might be a native FCM token or OneSignal Player ID
-      console.log(`📝 Registering native token for user ${userId}`);
-      // For native tokens, we could create a proper player
-      // But for now, we'll just use external user IDs
+      console.log(`📝 Registering native token/Player ID for user ${userId}`);
+      
+      // If this is a OneSignal Player ID (UUID format), update the player to set external_user_id
+      const isOneSignalPlayerId = pushToken.length === 36 && pushToken.includes("-");
+      
+      if (isOneSignalPlayerId) {
+        console.log(`📝 Updating OneSignal player ${pushToken.substring(0, 8)}... with external_user_id: ${userId}`);
+        
+        try {
+          // Update the existing player to set external_user_id
+          // This allows us to send notifications even if player is not subscribed
+          const updateData: any = {
+            app_id: AppCreds.onesignal.appId,
+            external_user_id: userId, // Set Firebase UID as external user ID
+          };
+
+          const response = await axios.put(
+            `${ONESIGNAL_PLAYERS_API_URL}/${pushToken}`,
+            updateData,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${AppCreds.onesignal.restApiKey}`,
+              },
+              timeout: 10000,
+            }
+          );
+
+          if (response.data.success !== false) {
+            console.log(`✅ OneSignal player updated with external_user_id for user ${userId}`);
+          } else {
+            console.warn(`⚠️ OneSignal player update returned:`, response.data);
+          }
+        } catch (updateError: any) {
+          // If player doesn't exist or update fails, try to create it
+          if (updateError.response?.status === 404 || updateError.response?.status === 400) {
+            console.log(`📝 Player might not exist, attempting to create with external_user_id...`);
+            try {
+              const playerData: any = {
+                app_id: AppCreds.onesignal.appId,
+                id: pushToken, // Use the Player ID as the player ID
+                external_user_id: userId,
+                device_type: platform === "ios" ? 0 : 1,
+              };
+
+              const createResponse = await axios.post(
+                ONESIGNAL_PLAYERS_API_URL,
+                playerData,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Basic ${AppCreds.onesignal.restApiKey}`,
+                  },
+                  timeout: 10000,
+                }
+              );
+
+              if (createResponse.data.id) {
+                console.log(`✅ OneSignal player created/updated with external_user_id for user ${userId}`);
+              }
+            } catch (createError: any) {
+              console.log(`⚠️ Could not create/update player, but external_user_id will work for notifications:`, createError.message);
+            }
+          } else {
+            console.error("Error updating OneSignal player:", updateError.response?.data || updateError.message);
+          }
+        }
+      } else {
+        // For other token types, create player with external_user_id only
+        console.log(`📝 Creating OneSignal player with external_user_id for user ${userId}`);
+        try {
+          const playerData: any = {
+            app_id: AppCreds.onesignal.appId,
+            external_user_id: userId,
+            device_type: platform === "ios" ? 0 : 1,
+          };
+
+          const response = await axios.post(
+            ONESIGNAL_PLAYERS_API_URL,
+            playerData,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${AppCreds.onesignal.restApiKey}`,
+              },
+              timeout: 10000,
+            }
+          );
+
+          if (response.data.id) {
+            console.log(`✅ OneSignal player created with external_user_id for user ${userId}:`, response.data.id);
+          }
+        } catch (apiError: any) {
+          if (apiError.response?.status === 400) {
+            console.log(`📝 Player might already exist for user ${userId}`);
+          } else {
+            console.error("Error creating OneSignal player:", apiError.response?.data || apiError.message);
+          }
+        }
+      }
     }
     
   } catch (error: any) {
@@ -122,11 +219,25 @@ export const saveFCMToken = async (
       tokenLength: token.length,
     });
 
-    // Store token (we'll use userId as external ID for OneSignal)
-    await db.collection("users").doc(userId).update({
-      pushToken: token, // Store any token format
+    // Store token in Firestore
+    // OneSignal Player IDs are UUIDs (36 chars), Expo tokens are longer
+    const isOneSignalPlayerId = token.length === 36 && token.includes("-");
+    
+    const updateData: any = {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+    
+    if (isOneSignalPlayerId) {
+      // Store as oneSignalPlayerId (preferred for OneSignal SDK)
+      updateData.oneSignalPlayerId = token;
+      console.log(`[OneSignal] Storing as oneSignalPlayerId: ${token.substring(0, 8)}...`);
+    } else {
+      // Store as pushToken (fallback for Expo tokens or other formats)
+      updateData.pushToken = token;
+      console.log(`[OneSignal] Storing as pushToken: ${token.substring(0, 20)}...`);
+    }
+    
+    await db.collection("users").doc(userId).update(updateData);
 
     console.log(`✅ Push token saved for user: ${userId}`);
     
@@ -211,10 +322,34 @@ const sendOneSignalNotification = async (
       }
     );
 
+    // Check for warnings about unsubscribed users
+    if (response.data.warnings?.invalid_external_user_ids) {
+      const unsubscribedUsers = response.data.warnings.invalid_external_user_ids;
+      console.log(`ℹ️  Some users are unsubscribed: ${unsubscribedUsers} - this is expected if permissions not granted`);
+      // Continue to check errors below
+    }
+
     // Check response for errors
     if (response.data.errors && response.data.errors.length > 0) {
-      console.error("❌ OneSignal API Errors:", response.data.errors);
-      // Log full response for debugging
+      const errorMessages = response.data.errors.map((e: any) => typeof e === 'string' ? e : e.message || JSON.stringify(e));
+      
+      // Check if error is "not subscribed" - this is recoverable
+      const hasNotSubscribedError = errorMessages.some((msg: string) => 
+        msg.toLowerCase().includes("not subscribed") || 
+        msg.toLowerCase().includes("unsubscribed")
+      );
+      
+      if (hasNotSubscribedError) {
+        // This is expected - user hasn't granted permissions or SDK hasn't initialized
+        // Don't log as error, just as info
+        console.log(`ℹ️  Players are not subscribed - user may need to grant notification permissions in app`);
+        // Don't log full response for unsubscribed errors to reduce noise
+        return { sent: 0, failed: playerIdsOrExternalIds.length };
+      }
+      
+      // For other errors, log as error
+      console.error("❌ OneSignal API Errors:", errorMessages);
+      // Log full response for debugging (but not for unsubscribed errors)
       console.error("📋 Full OneSignal Response:", JSON.stringify(response.data, null, 2));
       return { sent: 0, failed: playerIdsOrExternalIds.length };
     }
@@ -259,17 +394,54 @@ export const sendNotificationToUser = async (
     const playerId = await getUserOneSignalPlayerId(userId);
     
     if (playerId) {
-      // Use Player ID if available (from OneSignal SDK)
-      console.log(`📤 Sending to user ${userId} using Player ID`);
-      await sendOneSignalNotification([playerId], notification, false);
-    } else {
-      // Fall back to external user ID (Firebase UID)
-      console.log(`📤 Sending to user ${userId} using external user ID`);
-      await sendOneSignalNotification([userId], notification, true);
+      // Try Player ID first
+      console.log(`📤 Sending to user ${userId} using Player ID: ${playerId.substring(0, 8)}...`);
+      try {
+        const result = await sendOneSignalNotification([playerId], notification, false);
+        
+        // Check if notification was sent successfully
+        if (result.sent > 0) {
+          console.log(`✅ Notification sent successfully to Player ID`);
+          return;
+        }
+        
+        // If failed, check if it's because player is not subscribed
+        console.log(`⚠️  Notification failed with Player ID (sent: ${result.sent}, failed: ${result.failed})`);
+        console.log(`📤 Falling back to external user ID for user ${userId}`);
+      } catch (playerIdError: any) {
+        // If Player ID method fails, fall back to external user ID
+        console.log(`⚠️  Player ID method failed: ${playerIdError.message}`);
+        console.log(`📤 Falling back to external user ID for user ${userId}`);
+      }
+    }
+    
+    // Fall back to external user ID (Firebase UID)
+    // This works even if the player is not subscribed, as long as external_user_id is set
+    console.log(`📤 Sending to user ${userId} using external user ID`);
+    try {
+      const result = await sendOneSignalNotification([userId], notification, true);
+      if (result.sent > 0) {
+        console.log(`✅ Notification sent successfully using external user ID`);
+      } else {
+        console.warn(`⚠️  Notification failed with external user ID (sent: ${result.sent}, failed: ${result.failed})`);
+      }
+    } catch (externalIdError: any) {
+      // Check if it's an unsubscribed error - this is expected and not critical
+      const isUnsubscribedError = externalIdError.message?.toLowerCase().includes("unsubscribed") ||
+                                   externalIdError.response?.data?.warnings?.invalid_external_user_ids;
+      
+      if (isUnsubscribedError) {
+        console.log(`ℹ️  User ${userId} is not subscribed to notifications - this is expected if permissions not granted`);
+      } else {
+        console.error(`❌ Both Player ID and external user ID methods failed for user ${userId}`);
+        console.error(`Error details:`, externalIdError.message);
+      }
+      // Don't throw - notification failure shouldn't break the flow
     }
   } catch (error: any) {
     console.error("Error sending notification to user:", error);
-    throw error;
+    // Don't throw - notification failure shouldn't break the flow
+    console.error("Notification will be skipped, but operation will continue");
   }
 };
 
@@ -300,18 +472,37 @@ export const broadcastNotification = async (
 
     usersSnapshot.docs.forEach((doc) => {
       const userData = doc.data();
-      const playerId = userData?.oneSignalPlayerId || userData?.pushToken;
       
-      if (playerId && playerId.length > 20) {
-        // Likely a Player ID (UUID format)
+      // Check for OneSignal Player ID (UUID format: 36 chars with dashes)
+      // Priority: oneSignalPlayerId first, then check if pushToken is a Player ID
+      let playerId: string | null = null;
+      
+      if (userData?.oneSignalPlayerId) {
+        // Check if it's a valid UUID format (36 chars with dashes)
+        const isPlayerId = userData.oneSignalPlayerId.length === 36 && userData.oneSignalPlayerId.includes("-");
+        if (isPlayerId) {
+          playerId = userData.oneSignalPlayerId;
+        }
+      }
+      
+      // If no oneSignalPlayerId, check if pushToken is a Player ID
+      if (!playerId && userData?.pushToken) {
+        const isPlayerId = userData.pushToken.length === 36 && userData.pushToken.includes("-");
+        if (isPlayerId) {
+          playerId = userData.pushToken;
+        }
+      }
+      
+      if (playerId) {
+        // Valid OneSignal Player ID found
         playerIds.push(playerId);
       } else {
-        // Use external user ID (Firebase UID)
+        // No Player ID available, use external user ID (Firebase UID)
         externalUserIds.push(doc.id);
       }
     });
 
-    console.log(`[broadcastNotification] ${playerIds.length} users with Player IDs, ${externalUserIds.length} with external IDs`);
+    console.log(`[broadcastNotification] 📊 User breakdown: ${playerIds.length} users with Player IDs, ${externalUserIds.length} users with external IDs (total: ${usersSnapshot.size})`);
 
     let totalSent = 0;
     let totalFailed = 0;
@@ -319,35 +510,51 @@ export const broadcastNotification = async (
 
     // Send to users with Player IDs first (more reliable)
     if (playerIds.length > 0) {
+      const totalBatches = Math.ceil(playerIds.length / batchSize);
+      console.log(`[broadcastNotification] 📤 Sending to ${playerIds.length} users with Player IDs (${totalBatches} batch${totalBatches > 1 ? 'es' : ''})`);
+      
       for (let i = 0; i < playerIds.length; i += batchSize) {
         const batch = playerIds.slice(i, i + batchSize);
+        const batchNum = Math.floor(i / batchSize) + 1;
         try {
+          console.log(`[broadcastNotification] 📤 Sending batch ${batchNum}/${totalBatches} (Player IDs): ${batch.length} users`);
           const result = await sendOneSignalNotification(batch, notification, false);
           totalSent += result.sent;
           totalFailed += result.failed;
-          console.log(`Batch (Player IDs) ${Math.floor(i / batchSize) + 1}: ${result.sent} sent, ${result.failed} failed`);
+          console.log(`[broadcastNotification] ✅ Batch ${batchNum} (Player IDs): ${result.sent} sent, ${result.failed} failed`);
         } catch (error: any) {
-          console.error(`❌ Error sending Player ID batch ${Math.floor(i / batchSize) + 1}:`, error);
+          console.error(`[broadcastNotification] ❌ Error sending Player ID batch ${batchNum}:`, error.message || error);
           totalFailed += batch.length;
         }
       }
+    } else {
+      console.log(`[broadcastNotification] ⚠️  No users with Player IDs found`);
     }
 
     // Send to users with external IDs (fallback)
     if (externalUserIds.length > 0) {
+      const totalBatches = Math.ceil(externalUserIds.length / batchSize);
+      console.log(`[broadcastNotification] 📤 Sending to ${externalUserIds.length} users with external IDs (${totalBatches} batch${totalBatches > 1 ? 'es' : ''})`);
+      
       for (let i = 0; i < externalUserIds.length; i += batchSize) {
         const batch = externalUserIds.slice(i, i + batchSize);
+        const batchNum = Math.floor(i / batchSize) + 1;
         try {
+          console.log(`[broadcastNotification] 📤 Sending batch ${batchNum}/${totalBatches} (External IDs): ${batch.length} users`);
           const result = await sendOneSignalNotification(batch, notification, true);
           totalSent += result.sent;
           totalFailed += result.failed;
-          console.log(`Batch (External IDs) ${Math.floor(i / batchSize) + 1}: ${result.sent} sent, ${result.failed} failed`);
+          console.log(`[broadcastNotification] ✅ Batch ${batchNum} (External IDs): ${result.sent} sent, ${result.failed} failed`);
         } catch (error: any) {
-          console.error(`❌ Error sending External ID batch ${Math.floor(i / batchSize) + 1}:`, error);
+          console.error(`[broadcastNotification] ❌ Error sending External ID batch ${batchNum}:`, error.message || error);
           totalFailed += batch.length;
         }
       }
+    } else {
+      console.log(`[broadcastNotification] ⚠️  No users with external IDs found`);
     }
+
+    console.log(`[broadcastNotification] 📊 Final result: ${totalSent} sent, ${totalFailed} failed, ${usersSnapshot.size} total users`);
 
     return { sent: totalSent, failed: totalFailed, total: usersSnapshot.size };
   } catch (error: any) {
@@ -391,6 +598,10 @@ export const sendBookingStatusNotification = async (
       Returned: {
         title: "Parcel Returned",
         body: `Your parcel ${trackingNumber || bookingId} has been returned.`,
+      },
+      Cancelled: {
+        title: "Booking Cancelled",
+        body: `Your booking ${trackingNumber || bookingId} has been cancelled.`,
       },
     };
 

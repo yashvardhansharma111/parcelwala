@@ -57,6 +57,6 @@ ios/build/**
 **/*.keystore
 *.env*
 
-# Firebase config (must be included!)
 !google-services.json
 !android/app/google-services.json
+!android/local.properties

@@ -1,0 +1,62 @@
+# Ignore EVERYTHING by default
+**
+
+# Allow only essential project files for EAS
+!app.json
+!app.config.js
+!package.json
+!package-lock.json
+!yarn.lock
+!pnpm-lock.yaml
+!eas.json
+!babel.config.js
+!metro.config.js
+!tsconfig.json
+!index.js
+!index.ts
+!index.tsx
+!App.js
+!App.tsx
+
+# Allow source code & app assets
+!src/**
+!assets/**
+
+# Allow native folders (but NOT their build junk)
+!android/**
+!ios/**
+
+# Exclude build junk INSIDE allowed native dirs
+android/**/build/**
+android/.gradle/**
+android/.cxx/**
+ios/Pods/**
+ios/build/**
+
+# Expo caches
+.expo/**
+.expo-shared/**
+
+# Never upload heavy artifacts
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.tar
+**/*.tar.gz
+**/*.zip
+**/*.rar
+**/*.7z
+**/*.psd
+**/*.ai
+**/*.mov
+**/*.mp4
+**/*.wav
+**/*.mkv
+
+# Secrets / local config
+**/*.keystore
+*.env*
+
+# Firebase config (must be included!)
+!google-services.json
+!android/app/google-services.json
