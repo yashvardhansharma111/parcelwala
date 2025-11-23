@@ -126,26 +126,8 @@ export const apiRequest = async <T = any>(
       errorMsg.includes("Network request") ||
       error.name === "TypeError"
     ) {
-      const baseUrl = apiConfig.baseUrl;
-      const platform = Platform.OS;
-
-      let errorMessage = "Network request failed. ";
-      let suggestion = "";
-
-      if (baseUrl.includes("localhost") && platform === "android") {
-        suggestion =
-          "Android cannot use 'localhost'. Use '10.0.2.2' for emulator or your computer's IP for physical device.";
-      } else if (baseUrl.includes("10.0.2.2")) {
-        suggestion =
-          "Make sure backend is running on your host machine. Try: http://10.0.2.2:8080/health in browser.";
-      } else if (baseUrl.includes("localhost") && platform !== "ios") {
-        suggestion =
-          "For physical device, set EXPO_PUBLIC_API_BASE_URL to your computer's IP address (e.g., http://192.168.29.34:8080)";
-      } else {
-        suggestion = `Cannot reach ${baseUrl}. Verify the URL is correct and backend is running.`;
-      }
-
-      errorMessage += suggestion;
+      // Generic error message without exposing backend URL
+      const errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
 
       throw new Error(errorMessage);
     }
@@ -209,8 +191,8 @@ export const authApi = {
   /**
    * Send OTP to phone number
    */
-  sendOTP: async (phoneNumber: string): Promise<void> => {
-    await apiRequest("/auth/send-otp", {
+  sendOTP: async (phoneNumber: string): Promise<{ requiresSignup?: boolean }> => {
+    return await apiRequest<{ requiresSignup?: boolean }>("/auth/send-otp", {
       method: "POST",
       body: JSON.stringify({ phoneNumber }),
     });
@@ -300,6 +282,18 @@ export const userApi = {
   getProfile: async (): Promise<User> => {
     return await apiRequest<User>("/user/profile", {
       method: "GET",
+    });
+  },
+  /**
+   * Update user profile
+   */
+  updateProfile: async (updates: { name?: string }): Promise<User> => {
+    return await apiRequest<User>("/user/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
     });
   },
 };

@@ -21,14 +21,23 @@ let phoneNumberForOTP: string | null = null;
 /**
  * Send OTP to phone number
  */
-export const sendOTP = async (phoneNumber: string): Promise<void> => {
+export const sendOTP = async (phoneNumber: string): Promise<{ requiresSignup?: boolean }> => {
   try {
     const formattedPhone = phoneNumber.startsWith("+")
       ? phoneNumber
       : `+91${phoneNumber}`;
 
     phoneNumberForOTP = formattedPhone;
-    await authApi.sendOTP(formattedPhone);
+    const response = await authApi.sendOTP(formattedPhone);
+    
+    // Check if backend indicates user needs to signup
+    // response might be undefined if no data field, so check safely
+    if (response && response.requiresSignup) {
+      phoneNumberForOTP = null;
+      return { requiresSignup: true };
+    }
+    
+    return {};
   } catch (error: any) {
     phoneNumberForOTP = null;
     throw new Error(error.message || "Failed to send OTP");

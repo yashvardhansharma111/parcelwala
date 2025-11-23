@@ -12,6 +12,7 @@ export default function CustomerLayout() {
       <Stack.Screen name="booking" options={{ headerShown: false }} />
       <Stack.Screen name="payment" options={{ headerShown: false }} />
       <Stack.Screen name="support" options={{ headerShown: false }} />
+      <Stack.Screen name="profile" options={{ headerShown: false }} />
     </Stack>
   );
 }

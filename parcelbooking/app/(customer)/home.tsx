@@ -142,116 +142,130 @@ export default function CustomerHomeScreen() {
       <Header
         title="Home"
         rightAction={
-          <TouchableOpacity
-            onPress={handleLogout}
-            style={styles.logoutButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Feather name="log-out" size={22} color={colors.text} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => router.push("/(customer)/profile")}
+              style={styles.profileButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="user" size={22} color={colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Feather name="log-out" size={22} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         }
       />
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-        removeClippedSubviews={true}
-        scrollEventThrottle={16}
-      >
-        <View style={styles.header}>
-          <Text style={styles.greeting}>
-            Hi {user?.name || user?.phoneNumber || "User"}
-          </Text>
-          <Text style={styles.subtitle}>Manage your parcels</Text>
-        </View>
+      <View style={styles.contentWrapper}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          removeClippedSubviews={true}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.header}>
+            <Text style={styles.greeting}>
+              Hi {user?.name || user?.phoneNumber || "User"}
+            </Text>
+            <Text style={styles.subtitle}>Manage your parcels</Text>
+          </View>
 
-        <View style={styles.quickActions}>
-          {quickActions.map((action, index) => {
-            return (
-              <TouchableOpacity
-                key={index}
-                style={styles.quickActionCard}
-                onPress={action.onPress}
-              >
-                <View style={[styles.iconContainer, { backgroundColor: `${action.color}20` }]}>
-                  <Feather name={action.icon} size={24} color={action.color} />
-                </View>
-                <Text style={styles.quickActionText}>{action.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+          <View style={styles.quickActions}>
+            {quickActions.map((action, index) => {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.quickActionCard}
+                  onPress={action.onPress}
+                >
+                  <View style={[styles.iconContainer, { backgroundColor: `${action.color}20` }]}>
+                    <Feather name={action.icon} size={24} color={action.color} />
+                  </View>
+                  <Text style={styles.quickActionText}>{action.title}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Bookings</Text>
-          {loading ? (
-            <Loader color={colors.primary} />
-          ) : recentBookings.length === 0 ? (
-            <EmptyState
-              title="No bookings yet"
-              message="Create your first booking to get started"
-              icon={<Feather name="package" size={48} color={colors.textLight} />}
-            />
-          ) : (
-            <FlatList
-              data={recentBookings}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => {
-                const canCancel = item.status === "Created" || item.status === "PendingPayment";
-                const isCancelling = cancellingBookingId === item.id;
-                return (
-                  <Card style={styles.bookingCard}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        router.push(`/(customer)/booking/track?id=${item.id}`)
-                      }
-                    >
-                      <View style={styles.bookingHeader}>
-                        <Text style={styles.trackingNumber}>
-                          {item.trackingNumber || `#${item.id.slice(0, 8)}`}
-                        </Text>
-                        <StatusBadge status={item.status} />
-                      </View>
-                      <View style={styles.bookingInfo}>
-                        <Text style={styles.bookingRoute}>
-                          {item.pickup.city} → {item.drop.city}
-                        </Text>
-                        <Text style={styles.bookingDate}>
-                          {formatDate(item.createdAt)}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    {canCancel && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Recent Bookings</Text>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Loader color={colors.primary} />
+              </View>
+            ) : recentBookings.length === 0 ? (
+              <EmptyState
+                title="No bookings yet"
+                message="Create your first booking to get started"
+                icon={<Feather name="package" size={48} color={colors.textLight} />}
+              />
+            ) : (
+              <FlatList
+                data={recentBookings}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => {
+                  const canCancel = item.status === "Created" || item.status === "PendingPayment";
+                  const isCancelling = cancellingBookingId === item.id;
+                  return (
+                    <Card style={styles.bookingCard}>
                       <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleCancelBooking(item.id);
-                        }}
-                        disabled={isCancelling}
+                        onPress={() =>
+                          router.push(`/(customer)/booking/track?id=${item.id}`)
+                        }
                       >
-                        <Feather 
-                          name="x-circle" 
-                          size={16} 
-                          color={colors.error} 
-                        />
-                        <Text style={styles.cancelButtonText}>
-                          {isCancelling ? "Cancelling..." : "Cancel"}
-                        </Text>
+                        <View style={styles.bookingHeader}>
+                          <Text style={styles.trackingNumber}>
+                            {item.trackingNumber || `#${item.id.slice(0, 8)}`}
+                          </Text>
+                          <StatusBadge status={item.status} />
+                        </View>
+                        <View style={styles.bookingInfo}>
+                          <Text style={styles.bookingRoute}>
+                            {item.pickup.city} → {item.drop.city}
+                          </Text>
+                          <Text style={styles.bookingDate}>
+                            {formatDate(item.createdAt)}
+                          </Text>
+                        </View>
                       </TouchableOpacity>
-                    )}
-                  </Card>
-                );
-              }}
-              scrollEnabled={false}
-            />
-          )}
-        </View>
-
-        {/* Footer */}
+                      {canCancel && (
+                        <TouchableOpacity
+                          style={styles.cancelButton}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleCancelBooking(item.id);
+                          }}
+                          disabled={isCancelling}
+                        >
+                          <Feather 
+                            name="x-circle" 
+                            size={16} 
+                            color={colors.error} 
+                          />
+                          <Text style={styles.cancelButtonText}>
+                            {isCancelling ? "Cancelling..." : "Cancel"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </Card>
+                  );
+                }}
+                scrollEnabled={false}
+              />
+            )}
+          </View>
+        </ScrollView>
+        
+        {/* Footer - Always at bottom */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
+            Developed by ALAGU TECH SOLUTIONS
           </Text>
           <TouchableOpacity
             onPress={() => {
@@ -263,7 +277,7 @@ export default function CustomerHomeScreen() {
             <Text style={styles.supportText}>Customer Support: +91 84620 44151</Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -273,12 +287,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.surface,
   },
+  contentWrapper: {
+    flex: 1,
+    flexDirection: "column",
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
     paddingBottom: 16,
+  },
+  loadingContainer: {
+    minHeight: 200,
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     padding: 24,
@@ -360,6 +383,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
   },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  profileButton: {
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   logoutButton: {
     padding: 8,
     justifyContent: "center",
@@ -385,12 +418,12 @@ const styles = StyleSheet.create({
   },
   footer: {
     padding: 20,
-    paddingTop: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
     alignItems: "center",
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.background,
-    marginTop: 8,
   },
   footerText: {
     fontSize: 12,

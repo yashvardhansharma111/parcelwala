@@ -61,7 +61,30 @@ export default function LoginScreen() {
     const formattedPhone = `+91${phoneDigits}`;
 
     try {
-      await sendOTP(formattedPhone);
+      const result = await sendOTP(formattedPhone);
+      
+      // Check if user needs to signup
+      if (result.requiresSignup) {
+        Alert.alert(
+          "Account Not Found",
+          "No account found with this phone number. Please sign up to create an account.",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Sign Up",
+              onPress: () => {
+                // Route to signup page
+                router.push("/login/signup");
+              },
+            },
+          ]
+        );
+        return;
+      }
+      
       Alert.alert("Success", "OTP sent to your phone number");
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to send OTP");

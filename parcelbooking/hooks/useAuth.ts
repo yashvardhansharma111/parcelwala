@@ -54,8 +54,16 @@ export const useAuth = () => {
     try {
       setError(null);
       setLoading(true);
-      await authService.sendOTP(phoneNumber);
+      const result = await authService.sendOTP(phoneNumber);
+      
+      // Check if user needs to signup
+      if (result.requiresSignup) {
+        setOtpSent(false);
+        return { requiresSignup: true };
+      }
+      
       setOtpSent(true);
+      return {};
     } catch (error: any) {
       setError(error.message || "Failed to send OTP");
       setOtpSent(false);
