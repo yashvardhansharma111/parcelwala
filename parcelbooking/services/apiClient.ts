@@ -78,7 +78,7 @@ export const apiRequest = async <T = any>(
             throw new Error(`Request failed: ${retryResponse.status}`);
           }
 
-          const retryData: ApiResponse<T> = await retryResponse.json();
+          const retryData = await retryResponse.json() as ApiResponse<T>;
           if (!retryData.success) {
             throw new Error(retryData.error?.message || "Request failed");
           }
@@ -92,15 +92,15 @@ export const apiRequest = async <T = any>(
     }
 
     if (!response.ok) {
-      const errorData: ApiResponse = await response.json().catch(() => ({
+      const errorData = await response.json().catch(() => ({
         success: false,
         error: { message: `Request failed: ${response.status}` },
-      }));
+      })) as ApiResponse;
 
       throw new Error(errorData.error?.message || `Request failed: ${response.status}`);
     }
 
-    const data: ApiResponse<T> = await response.json();
+    const data = await response.json() as ApiResponse<T>;
 
     if (!data.success) {
       throw new Error(data.error?.message || "Request failed");
@@ -174,7 +174,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
       return null;
     }
 
-    const data: ApiResponse<{ accessToken: string }> = await response.json();
+    const data = await response.json() as ApiResponse<{ accessToken: string }>;
 
     if (data.success && data.data?.accessToken) {
       await setAccessToken(data.data.accessToken);

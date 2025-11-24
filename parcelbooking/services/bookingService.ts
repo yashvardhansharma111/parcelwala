@@ -93,20 +93,7 @@ export const getUserBookings = async (options?: {
       method: "GET",
     });
 
-    // Debug logging
-    if (__DEV__) {
-      // API Response received
-        bookingsCount: response?.bookings?.length || 0,
-        hasMore: response?.hasMore,
-        lastDocId: response?.lastDocId,
-        responseKeys: Object.keys(response || {}),
-        firstBooking: response?.bookings?.[0] ? {
-          id: response.bookings[0].id,
-          status: response.bookings[0].status,
-          userId: response.bookings[0].userId,
-        } : null,
-      });
-    }
+    // API Response received
 
     return {
       bookings: response?.bookings || [],
