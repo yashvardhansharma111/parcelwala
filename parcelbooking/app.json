@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "parcelbooking",
+    "name": "ParcelWallah",
     "slug": "parcelbooking",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
@@ -26,6 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "label": "ParcelWallah",
       "notification": {
         "icon": "./assets/images/parcelwalla.png",
         "color": "#FF6B35"

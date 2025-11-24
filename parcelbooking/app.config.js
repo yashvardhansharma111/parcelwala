@@ -76,7 +76,7 @@ module.exports = function (config = {}) {
     // Don't force a hard-coded owner — use provided value or leave undefined
     owner: config.owner || appJson.expo?.owner || undefined,
     slug: config.slug || appJson.expo?.slug || 'parcelbooking',
-    name: config.name || appJson.expo?.name || 'ParcelBooking',
+    name: config.name || appJson.expo?.name || 'ParcelWallah',
     scheme: config.scheme || appJson.expo?.scheme || 'parcelbooking',
     sdkVersion: config.sdkVersion || appJson.expo?.sdkVersion || '54.0.0',
     runtimeVersion: config.runtimeVersion || appJson.expo?.runtimeVersion || (appJson.expo?.runtimeVersion || { policy: "appVersion" }),
