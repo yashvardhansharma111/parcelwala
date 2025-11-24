@@ -63,26 +63,26 @@ const initializeOneSignal = (): void => {
 
   try {
     const appId = getOneSignalAppId();
-    console.log("[OneSignal] Initializing with App ID:", appId);
+    // OneSignal initialization
     
     // Initialize OneSignal (v5.x API)
     OneSignal.initialize(appId);
     
     // Set up notification handlers
     OneSignal.Notifications.addEventListener('click', (event: any) => {
-      console.log("👆 OneSignal Notification opened:", event);
+      // Notification opened - handled by navigation
       // Handle navigation or other actions when notification is opened
       // You can add navigation logic here based on notification data
     });
 
     OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: any) => {
-      console.log("📬 OneSignal Notification received (foreground):", event);
+      // Notification received in foreground
       // Display notification in foreground
       event.getNotification().display();
     });
 
     oneSignalInitialized = true;
-    console.log("[OneSignal] ✅ Initialized successfully");
+    // OneSignal initialized
   } catch (error: any) {
     console.error("[OneSignal] ❌ Error initializing:", error);
   }
@@ -94,7 +94,7 @@ const initializeOneSignal = (): void => {
 export const registerForPushNotifications = async (): Promise<string | null> => {
   // Check if running in Expo Go
   const isExpoGoApp = isExpoGo();
-  console.log("[OneSignal] isExpoGo check:", isExpoGoApp);
+  // Check if running in Expo Go
   
   // Skip registration if running in Expo Go
   if (isExpoGoApp) {
@@ -111,7 +111,7 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
     const { user } = useAuthStore.getState();
     
     if (!user) {
-      console.log("[OneSignal] User not authenticated, skipping registration");
+      // User not authenticated, skipping registration
       return null;
     }
 
@@ -127,21 +127,21 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
       return null;
     }
 
-    console.log("[OneSignal] Player ID:", playerId);
+    // Player ID obtained
 
     // Set external user ID to link OneSignal user to Firebase user
     try {
       OneSignal.login(user.id); // Use user.id (Firebase UID)
-      console.log(`[OneSignal] External User ID set to: ${user.id}`);
+      // External User ID set
     } catch (error: any) {
       console.error("[OneSignal] Error setting external user ID:", error);
     }
 
     // Register Player ID with backend
     try {
-      console.log("[OneSignal] Registering Player ID with backend...");
+      // Registering Player ID with backend
       await registerOneSignalPlayerId(playerId);
-      console.log("[OneSignal] ✅ Player ID registered successfully with backend");
+        // Player ID registered successfully
     } catch (error: any) {
       console.error("[OneSignal] ❌ Failed to register Player ID:", error);
       // Don't throw - registration might still work

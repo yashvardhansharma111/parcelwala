@@ -370,8 +370,6 @@ export default function NewBookingScreen() {
       setLoadingSuggestions(true);
       setShowPickupSuggestions(false); // Hide suggestions immediately
       
-      console.log("[Pickup] Selected suggestion:", suggestion.displayName);
-      
       // Fill address fields from suggestion
       setPickup((prev) => ({
         ...prev,
@@ -400,8 +398,6 @@ export default function NewBookingScreen() {
     try {
       setLoadingSuggestions(true);
       setShowDropSuggestions(false); // Hide suggestions immediately
-      
-      console.log("[Drop] Selected suggestion:", suggestion.displayName);
       
       // Fill address fields from suggestion
       setDrop((prev) => ({
@@ -436,25 +432,12 @@ export default function NewBookingScreen() {
       const hasDropCity = drop.city && drop.city.trim().length > 0;
       const hasWeight = parcelDetails.weight && parcelDetails.weight > 0 && parcelDetails.weight <= 5;
       
-      console.log("[Fare] Calculation check:", {
-        hasWeight,
-        hasPickupCity,
-        hasDropCity,
-        pickupCity: pickup.city,
-        dropCity: drop.city,
-        weight: parcelDetails.weight,
-        hasPickupPincode,
-        hasDropPincode,
-        hasCoordinates: !!(pickupCoordinates && dropCoordinates),
-      });
-      
       // Need at least weight and both cities to calculate fare
       // Also check weight doesn't exceed 5 kg
       if (!hasWeight || !hasPickupCity || !hasDropCity || parcelDetails.weight > 5) {
         if (parcelDetails.weight > 5) {
           setWeightError("Maximum weight allowed is 5 kg");
         }
-        console.log("[Fare] Missing required fields or weight exceeds limit, clearing fare");
         setFareCalculation(null);
         return;
       }
@@ -464,17 +447,6 @@ export default function NewBookingScreen() {
       
       setLoadingFare(true);
       try {
-        console.log("[Fare] Calculating fare with:", {
-          pickupCoords: pickupCoordinates || defaultCoords,
-          dropCoords: dropCoordinates || defaultCoords,
-          weight: parcelDetails.weight,
-          pickupPincode: hasPickupPincode ? pickup.pincode : undefined,
-          dropPincode: hasDropPincode ? drop.pincode : undefined,
-          couponCode: couponCode.trim() || undefined,
-          pickupCity: pickup.city,
-          dropCity: drop.city,
-        });
-        
         // Use coordinates if available, otherwise use default coordinates
         // The backend will use cities and pincodes for accurate calculation
         const fare = await calculateFare(
@@ -488,7 +460,6 @@ export default function NewBookingScreen() {
           drop.city
         );
         
-        console.log("[Fare] Calculation result:", fare);
         setFareCalculation(fare);
       } catch (error: any) {
         console.error("[Fare] Error calculating fare:", error);
@@ -506,9 +477,7 @@ export default function NewBookingScreen() {
   const loadCities = useCallback(async () => {
     try {
       setLoadingCities(true);
-      console.log("[Cities] Fetching cities from API...");
       const response = await mapApi.getCities();
-      console.log("[Cities] API response:", response);
       
       // The API returns { cities: [...] } after apiRequest unwraps the data
       const citiesList = response?.cities || [];
@@ -532,14 +501,11 @@ export default function NewBookingScreen() {
           }));
         
         if (validCities.length > 0) {
-          console.log("[Cities] Loaded", validCities.length, "cities from API:", validCities.map(c => c.name));
           setCities(validCities);
         } else {
-          console.log("[Cities] No valid cities found, using defaults");
           setCities(defaultCities);
         }
       } else {
-        console.log("[Cities] API returned empty cities list, using defaults");
         // Keep default cities if API returns empty
         setCities(defaultCities);
       }

@@ -120,3 +120,43 @@ export const generateTrackingNumber = (): string => {
   return `PKG${timestamp}${random}`;
 };
 
+/**
+ * Sanitize error messages to remove backend URLs and sensitive information
+ * This prevents exposing server details to users
+ */
+export const sanitizeErrorMessage = (errorMessage: string | null | undefined): string => {
+  if (!errorMessage) {
+    return "An error occurred. Please try again.";
+  }
+
+  let sanitized = errorMessage;
+
+  // Remove HTTP/HTTPS URLs
+  sanitized = sanitized.replace(/https?:\/\/[^\s]+/gi, "[server]");
+  
+  // Remove IP addresses (IPv4)
+  sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?::\d+)?\b/g, "[server]");
+  
+  // Remove localhost references
+  sanitized = sanitized.replace(/localhost[^\s]*/gi, "[server]");
+  
+  // Remove ngrok URLs
+  sanitized = sanitized.replace(/ngrok[^\s]*/gi, "[server]");
+  
+  // Remove domain names (common TLDs)
+  sanitized = sanitized.replace(/[a-zA-Z0-9-]+\.(com|net|org|in|io|dev|app|xyz|co|me|info|tech|online)[^\s]*/gi, "[server]");
+  
+  // Remove port numbers that might be exposed
+  sanitized = sanitized.replace(/:\d{4,5}\b/g, "");
+  
+  // Remove common error patterns that might contain URLs
+  sanitized = sanitized.replace(/at\s+https?:\/\/[^\s]+/gi, "at [server]");
+  sanitized = sanitized.replace(/fetching\s+https?:\/\/[^\s]+/gi, "fetching from [server]");
+  sanitized = sanitized.replace(/request\s+to\s+https?:\/\/[^\s]+/gi, "request to [server]");
+
+  // Trim and return, or provide fallback
+  sanitized = sanitized.trim();
+  
+  return sanitized || "An error occurred. Please try again.";
+};
+

@@ -12,6 +12,7 @@ import {
   clearTokens,
 } from "./tokenStorage";
 import { User } from "../utils/types";
+import { sanitizeErrorMessage } from "../utils/formatters";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -48,10 +49,7 @@ export const apiRequest = async <T = any>(
   }
 
   try {
-    // Log request for debugging (remove in production)
-    if (__DEV__) {
-      console.log(`[API] ${options.method || "GET"} ${url}`);
-    }
+    // Request logging removed for production
 
     const response = await fetch(url, {
       ...options,
@@ -110,7 +108,7 @@ export const apiRequest = async <T = any>(
 
     return data.data as T;
   } catch (error: any) {
-    // Log error for debugging
+    // Log error for debugging (only in dev mode)
     if (__DEV__) {
       console.error(`[API Error] ${url}:`, error);
       console.error(`[API Config] Base URL: ${apiConfig.baseUrl}`);
@@ -124,18 +122,24 @@ export const apiRequest = async <T = any>(
       errorMsg.includes("Failed to fetch") ||
       errorMsg.includes("NetworkError") ||
       errorMsg.includes("Network request") ||
+      errorMsg.includes("ECONNREFUSED") ||
+      errorMsg.includes("ETIMEDOUT") ||
+      errorMsg.includes("ENOTFOUND") ||
+      errorMsg.includes("ECONNABORTED") ||
       error.name === "TypeError"
     ) {
       // Generic error message without exposing backend URL
-      const errorMessage = "Unable to connect to the server. Please check your internet connection and try again.";
-
-      throw new Error(errorMessage);
+      throw new Error("Unable to connect to the server. Please check your internet connection and try again.");
     }
 
+    // For other errors, sanitize the message to remove any URLs
     if (error.message) {
-      throw error;
+      const sanitizedMessage = sanitizeErrorMessage(error.message);
+      throw new Error(sanitizedMessage);
     }
-    throw new Error("Network error. Please check your connection.");
+    
+    // Fallback generic error
+    throw new Error("An error occurred. Please try again.");
   }
 };
 
@@ -756,9 +760,6 @@ export const mapApi = {
 export const testConnection = async (): Promise<void> => {
   try {
     const url = `${apiConfig.baseUrl}/health`;
-    if (__DEV__) {
-      console.log(`[API Test] Testing connection to: ${url}`);
-    }
 
     const testHeaders: Record<string, string> = {};
 
@@ -778,10 +779,7 @@ export const testConnection = async (): Promise<void> => {
       throw new Error(`Health check failed: ${response.status}`);
     }
 
-    const data = await response.json();
-    if (__DEV__) {
-      console.log(`[API Test] Connection successful:`, data);
-    }
+    await response.json();
   } catch (error: any) {
     if (__DEV__) {
       console.error(`[API Test] Connection failed:`, error);

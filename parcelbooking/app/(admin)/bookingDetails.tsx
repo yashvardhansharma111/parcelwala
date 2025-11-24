@@ -69,9 +69,8 @@ export default function AdminBookingDetailsScreen() {
   useFocusEffect(
     React.useCallback(() => {
       if (id) {
-        console.log('[AdminBookingDetails] 🔄 Screen focused, refreshing booking once...');
         fetchBooking(id).catch((error) => {
-          console.error('[AdminBookingDetails] ❌ Error refreshing booking:', error);
+          if (__DEV__) console.error('[AdminBookingDetails] Error refreshing booking:', error);
         });
       }
     }, [id]) // Removed fetchBooking from dependencies - it should be stable
@@ -84,7 +83,6 @@ export default function AdminBookingDetailsScreen() {
       const needsRefresh = selectedBooking.status === "PendingPayment" && selectedBooking.paymentStatus === "paid";
       
       if (needsRefresh) {
-        console.log('[AdminBookingDetails] 🔄 Status mismatch detected (PendingPayment but paid), auto-refreshing...');
         let refreshCount = 0;
         const maxRefreshes = 5; // Only refresh 5 times (10 seconds total)
         
@@ -92,19 +90,16 @@ export default function AdminBookingDetailsScreen() {
           refreshCount++;
           if (refreshCount > maxRefreshes) {
             clearInterval(refreshInterval);
-            console.log('[AdminBookingDetails] ✅ Stopped auto-refresh (max attempts reached)');
             return;
           }
-          console.log('[AdminBookingDetails] 🔄 Auto-refreshing booking to get updated status...', refreshCount);
           fetchBooking(id).catch((error) => {
-            console.error('[AdminBookingDetails] ❌ Error refreshing booking:', error);
+            if (__DEV__) console.error('[AdminBookingDetails] Error refreshing booking:', error);
           });
         }, 2000); // Refresh every 2 seconds
 
         // Clear interval after 10 seconds
         const timeoutId = setTimeout(() => {
           clearInterval(refreshInterval);
-          console.log('[AdminBookingDetails] ✅ Stopped auto-refresh (timeout)');
         }, 10000);
 
         return () => {

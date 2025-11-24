@@ -20,7 +20,7 @@ import { Card } from "../../components/Card";
 import { Header } from "../../components/Header";
 import { Loader } from "../../components/Loader";
 import { colors } from "../../theme/colors";
-import { formatCurrency, formatDate } from "../../utils/formatters";
+import { formatCurrency, formatDate, sanitizeErrorMessage } from "../../utils/formatters";
 import * as analyticsService from "../../services/analyticsService";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -90,7 +90,8 @@ export default function AnalyticsScreen() {
       setFailedDeliveries(failedData);
     } catch (error: any) {
       console.error("Error fetching analytics:", error);
-      Alert.alert("Error", error.message || "Failed to fetch analytics");
+      const sanitizedMessage = sanitizeErrorMessage(error.message);
+      Alert.alert("Error", sanitizedMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);

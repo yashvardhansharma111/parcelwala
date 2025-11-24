@@ -49,7 +49,6 @@ export default function PaymentScreen() {
       setIsScreenFocused(true);
       return () => {
         // When screen loses focus, clear transaction ID and mark as navigated to prevent any redirects
-        console.log("[PaymentScreen] Screen lost focus, clearing state");
         setIsScreenFocused(false);
         setTransactionId(null);
         setHasNavigatedToSuccess(true);
@@ -79,7 +78,6 @@ export default function PaymentScreen() {
     // Don't set up listener if we've already navigated to success, if we're on success screen, or if screen is not focused
     // Also check if we have no transaction ID (means we've already processed or cleared)
     if (hasNavigatedToSuccess || pathname?.includes("payment/success") || !isScreenFocused || !transactionId) {
-      console.log("[PaymentScreen] Skipping AppState listener - already on success screen, navigated, screen not focused, or no transaction ID");
       return;
     }
 
@@ -91,7 +89,6 @@ export default function PaymentScreen() {
       if (nextAppState === "active" && transactionId && !processing && !hasNavigatedToSuccess && isScreenFocused) {
         // Double-check if we're on success screen, screen lost focus, or pathname changed
         if (currentPath?.includes("payment/success") || !isScreenFocused || hasNavigatedToSuccess) {
-          console.log("[PaymentScreen] Already on success screen, screen not focused, or already navigated - skipping payment check");
           setTransactionId(null);
           setHasNavigatedToSuccess(true);
           return;
@@ -99,13 +96,11 @@ export default function PaymentScreen() {
         
         // Triple-check: if we don't have transactionId anymore, exit
         if (!transactionId) {
-          console.log("[PaymentScreen] Transaction ID cleared, exiting");
           setIsRedirecting(false);
           return;
         }
         
         // Show redirecting overlay
-        console.log("[PaymentScreen] App became active, showing redirecting overlay and checking payment status...");
         setIsRedirecting(true);
         
         // Wait a bit for webhook to process (reduced from 3000ms to 2000ms for faster response)
@@ -114,13 +109,11 @@ export default function PaymentScreen() {
         try {
           // Check payment status first
           const status = await paymentService.checkPaymentStatus(transactionId);
-          console.log("[PaymentScreen] Payment status:", status);
           
           if (status.status === "SUCCESS") {
             // Payment successful - navigate to success page
             // Pass merchantRefId (which is the transactionId) so success screen can fetch booking
             const bookingId = selectedBooking?.id || null;
-            console.log("[PaymentScreen] ✅ Payment successful, navigating to success screen");
             setHasNavigatedToSuccess(true); // Mark as navigated to prevent further checks
             setTransactionId(null); // Clear transaction ID
             setIsRedirecting(false); // Hide redirecting overlay
@@ -169,7 +162,7 @@ export default function PaymentScreen() {
             setIsRedirecting(false);
           }
         } catch (error: any) {
-          console.log("[PaymentScreen] Payment verification error:", error.message);
+          if (__DEV__) console.error("[PaymentScreen] Payment verification error:", error);
           setIsRedirecting(false); // Hide redirecting overlay on error
           // Don't assume success on error - ask user to check status
           Alert.alert(
@@ -220,14 +213,6 @@ export default function PaymentScreen() {
     try {
       setProcessing(true);
       
-      if (booking) {
-        // Existing booking
-        console.log("[PaymentScreen] Starting payment for booking:", booking.id);
-      } else {
-        // New booking - will be created after payment success
-        console.log("[PaymentScreen] Starting payment for new booking");
-      }
-      
       const paymentResult = await initiatePayment(
         booking || null,
         user.phoneNumber,
@@ -236,76 +221,37 @@ export default function PaymentScreen() {
         bookingData
       );
 
-      console.log("[PaymentScreen] Payment result received:", {
-        hasPaymentUrl: !!paymentResult?.paymentUrl,
-        hasTransactionId: !!paymentResult?.transactionId,
-        paymentUrl: paymentResult?.paymentUrl?.substring(0, 50) + "...",
-      });
-
       if (!paymentResult || !paymentResult.paymentUrl || !paymentResult.transactionId) {
-        console.error("[PaymentScreen] Invalid payment result:", paymentResult);
+        if (__DEV__) console.error("[PaymentScreen] Invalid payment result:", paymentResult);
         Alert.alert("Error", "Invalid payment response received from server");
         return;
       }
 
       const { paymentUrl, transactionId: txId } = paymentResult;
 
-      console.log("[PaymentScreen] 🔵 ========== PAYMENT INITIATED ==========");
-      console.log("[PaymentScreen] 📥 Payment result:", {
-        paymentUrl: paymentUrl,
-        transactionId: txId,
-        hasUrl: !!paymentUrl,
-        hasTransactionId: !!txId,
-      });
-
       // Store transaction ID for verification when user returns
       setTransactionId(txId);
-      console.log("[PaymentScreen] 💾 Transaction ID stored:", txId);
-
-      console.log("[PaymentScreen] 🌐 Opening payment URL in external browser:", paymentUrl);
       
       try {
         // Open payment URL in external browser (PayGIC UPI payment page)
-        console.log("[PaymentScreen] 🔍 Checking if URL can be opened...");
         const canOpen = await Linking.canOpenURL(paymentUrl);
-        console.log("[PaymentScreen] ✅ Can open URL:", canOpen);
         
         if (!canOpen) {
-          console.error("[PaymentScreen] ❌ Cannot open payment URL - URL not supported");
           Alert.alert("Error", "Cannot open payment URL. Please check your browser settings.");
           setTransactionId(null);
           return;
         }
 
-        console.log("[PaymentScreen] 🚀 Opening payment URL...");
         await Linking.openURL(paymentUrl);
-        console.log("[PaymentScreen] ✅ Payment URL opened successfully");
-        
-        // Show loading state - user will be redirected to success screen
-        // The deep link handler will navigate them automatically
         
         // Show instruction to user
         Alert.alert(
           "Redirecting to Payment",
           "You'll be redirected to the payment page. After completing payment, you'll be automatically redirected back to the app.",
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                console.log("[PaymentScreen] ✅ User acknowledged payment page opened");
-                // Transaction ID is already set, AppState listener will handle verification
-              },
-            },
-          ]
+          [{ text: "OK" }]
         );
       } catch (error: any) {
-        console.error("[PaymentScreen] ❌ ========== ERROR OPENING PAYMENT URL ==========");
-        console.error("[PaymentScreen] ❌ Error details:", {
-          error: error,
-          message: error.message || "Unknown error",
-          paymentUrl: paymentUrl,
-          transactionId: txId,
-        });
+        if (__DEV__) console.error("[PaymentScreen] Error opening payment URL:", error);
         Alert.alert(
           "Error", 
           `Cannot open payment page: ${error.message || "Unknown error"}`

@@ -95,7 +95,7 @@ export const getUserBookings = async (options?: {
 
     // Debug logging
     if (__DEV__) {
-      console.log("[getUserBookings] API Response:", {
+      // API Response received
         bookingsCount: response?.bookings?.length || 0,
         hasMore: response?.hasMore,
         lastDocId: response?.lastDocId,

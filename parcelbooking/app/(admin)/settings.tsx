@@ -69,13 +69,7 @@ export default function AdminSettingsScreen() {
   const superAdminPhone = normalizePhone(SUPER_ADMIN_PHONE);
   const isSuperAdmin = userPhone === superAdminPhone;
   
-  // Debug logging in development
-  if (__DEV__) {
-    console.log("[AdminSettings] User phone (normalized):", userPhone);
-    console.log("[AdminSettings] Super admin phone (normalized):", superAdminPhone);
-    console.log("[AdminSettings] Is super admin:", isSuperAdmin);
-    console.log("[AdminSettings] User role:", user?.role);
-  }
+  // Debug logging removed - only log errors in production
   
   const [activeTab, setActiveTab] = useState<Tab>("pricing");
 

@@ -68,12 +68,8 @@ export default function CustomerHomeScreen() {
   useFocusEffect(
     useCallback(() => {
       if (user) {
-        console.log('[CustomerHome] 🔄 Screen focused, refreshing bookings...');
-        // Force refresh bookings when screen is focused, especially after payment
-        fetchBookings().then(() => {
-          console.log('[CustomerHome] ✅ Bookings refreshed');
-        }).catch((error) => {
-          console.error('[CustomerHome] ❌ Error refreshing bookings:', error);
+        fetchBookings().catch((error) => {
+          if (__DEV__) console.error('[CustomerHome] Error refreshing bookings:', error);
         });
       }
     }, [user, fetchBookings])
@@ -84,9 +80,8 @@ export default function CustomerHomeScreen() {
     if (user) {
       // Small delay to ensure navigation is complete before fetching
       const timer = setTimeout(() => {
-        console.log('[CustomerHome] 🔄 Component mounted/updated, refreshing bookings...');
         fetchBookings().catch((error) => {
-          console.error('[CustomerHome] ❌ Error refreshing bookings on mount:', error);
+          if (__DEV__) console.error('[CustomerHome] Error refreshing bookings on mount:', error);
         });
       }, 300); // Small delay to ensure screen is ready
       

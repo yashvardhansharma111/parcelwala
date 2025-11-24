@@ -69,7 +69,7 @@ export const initiatePayment = async (
     );
 
     // Debug: Log the response
-    console.log("[PaymentService] Received response:", JSON.stringify(response, null, 2));
+    // Payment response received
     
     // Response is already the data object, so access properties directly
     if (!response) {
@@ -87,7 +87,7 @@ export const initiatePayment = async (
       throw new Error(`Invalid payment response: missing merchantReferenceId. Response: ${JSON.stringify(response)}`);
     }
 
-    console.log("[PaymentService] Successfully extracted paymentUrl:", response.paymentUrl);
+    // Payment URL extracted
     
     return {
       paymentUrl: response.paymentUrl,
@@ -133,7 +133,7 @@ export const completePayment = async (
   try {
     const paymentResult = await checkPaymentStatus(merchantReferenceId);
 
-    console.log("[PaymentService] Payment status check result:", paymentResult);
+    // Payment status checked
 
     if (paymentResult.status === "SUCCESS") {
       // Payment successful - backend webhook should have already updated the status
@@ -143,7 +143,7 @@ export const completePayment = async (
     } else if (paymentResult.status === "PENDING") {
       // PENDING status - payment might still be processing
       // Don't throw error, just return - webhook will update when payment completes
-      console.log("[PaymentService] Payment is still pending, will be updated by webhook");
+      // Payment pending, will be updated by webhook
       return;
     } else {
       // Unknown status
@@ -153,7 +153,7 @@ export const completePayment = async (
     console.error("[PaymentService] Payment verification error:", error);
     // If error message indicates pending status, don't throw
     if (error.message?.includes("pending") || error.message?.includes("Pending")) {
-      console.log("[PaymentService] Payment appears to be pending, not throwing error");
+      // Payment appears to be pending
       return;
     }
     throw error;

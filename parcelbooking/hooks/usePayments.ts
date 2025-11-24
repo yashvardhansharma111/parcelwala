@@ -39,12 +39,6 @@ export const usePayments = () => {
       const name = customerName || booking?.pickup?.name || bookingData?.pickup?.name || "Customer";
       const email = customerEmail || `${customerPhone.replace(/\D/g, "")}@parcelapp.com`;
 
-      if (booking) {
-        console.log("[usePayments] Initiating payment for booking:", booking.id);
-      } else {
-        console.log("[usePayments] Initiating payment for new booking (will be created after payment)");
-      }
-      
       const result = await paymentService.initiatePayment(
         booking?.id || null,
         fare,
@@ -53,12 +47,6 @@ export const usePayments = () => {
         email,
         bookingData
       );
-
-      console.log("[usePayments] Payment initiated successfully:", {
-        hasPaymentUrl: !!result.paymentUrl,
-        hasTransactionId: !!result.transactionId,
-        paymentUrl: result.paymentUrl?.substring(0, 50) + "...",
-      });
 
       return result;
     } catch (error: any) {

@@ -46,9 +46,8 @@ export default function TrackBookingScreen() {
   useFocusEffect(
     React.useCallback(() => {
       if (id && !id.includes("PBS") && id.length <= 20) {
-        console.log('[TrackBooking] 🔄 Screen focused, refreshing booking once...');
         fetchBooking(id).catch((error) => {
-          console.error('[TrackBooking] ❌ Error refreshing booking:', error);
+          if (__DEV__) console.error('[TrackBooking] Error refreshing booking:', error);
         });
       }
     }, [id]) // Removed fetchBooking from dependencies - it should be stable
@@ -61,7 +60,6 @@ export default function TrackBookingScreen() {
       const needsRefresh = selectedBooking.status === "PendingPayment" && selectedBooking.paymentStatus === "paid";
       
       if (needsRefresh) {
-        console.log('[TrackBooking] 🔄 Status mismatch detected (PendingPayment but paid), auto-refreshing...');
         let refreshCount = 0;
         const maxRefreshes = 5; // Only refresh 5 times (10 seconds total)
         
@@ -69,19 +67,16 @@ export default function TrackBookingScreen() {
           refreshCount++;
           if (refreshCount > maxRefreshes) {
             clearInterval(refreshInterval);
-            console.log('[TrackBooking] ✅ Stopped auto-refresh (max attempts reached)');
             return;
           }
-          console.log('[TrackBooking] 🔄 Auto-refreshing booking to get updated status...', refreshCount);
           fetchBooking(id).catch((error) => {
-            console.error('[TrackBooking] ❌ Error refreshing booking:', error);
+            if (__DEV__) console.error('[TrackBooking] Error refreshing booking:', error);
           });
         }, 2000); // Refresh every 2 seconds
 
         // Clear interval after 10 seconds
         const timeoutId = setTimeout(() => {
           clearInterval(refreshInterval);
-          console.log('[TrackBooking] ✅ Stopped auto-refresh (timeout)');
         }, 10000);
 
         return () => {
