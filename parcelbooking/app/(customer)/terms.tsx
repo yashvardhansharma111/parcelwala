@@ -35,7 +35,7 @@ export default function TermsScreen() {
               be allowed.
             </Text>
             <Text style={styles.paragraph}>
-              <Text style={styles.bold}>ParcelWallah reserves the right to cancel orders in case of:</Text>
+              <Text style={styles.bold}>ParcelWalah reserves the right to cancel orders in case of:</Text>
             </Text>
             <Text style={styles.bulletPoint}>
               • Incorrect or incomplete address
@@ -60,7 +60,7 @@ export default function TermsScreen() {
           <Card>
             <Text style={styles.sectionTitle}>Refund Policy</Text>
             <Text style={styles.paragraph}>
-              ParcelWallah follows a simple and transparent refund process:
+              ParcelWalah follows a simple and transparent refund process:
             </Text>
 
             <Text style={styles.subsectionTitle}>1. Before Assignment</Text>
@@ -87,7 +87,7 @@ export default function TermsScreen() {
               • Non-availability of delivery partner
             </Text>
             <Text style={styles.bulletPoint}>
-              • Operational fault on ParcelWallah's side
+              • Operational fault on ParcelWalah's side
             </Text>
 
             <Text style={styles.subsectionTitle}>4. User-Caused Failures</Text>
@@ -122,7 +122,7 @@ export default function TermsScreen() {
           <Card>
             <Text style={styles.sectionTitle}>General Terms</Text>
             <Text style={styles.paragraph}>
-              By using ParcelWallah, you agree to comply with all applicable terms
+              By using ParcelWalah, you agree to comply with all applicable terms
               and conditions. We reserve the right to modify these terms at any time.
             </Text>
             <Text style={styles.paragraph}>

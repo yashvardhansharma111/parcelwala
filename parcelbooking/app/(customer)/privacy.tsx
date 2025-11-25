@@ -1,6 +1,6 @@
 /**
  * Privacy Policy Screen
- * Privacy policy for ParcelWallah
+ * Privacy policy for ParcelWalah
  */
 
 import React from "react";
@@ -27,7 +27,7 @@ export default function PrivacyScreen() {
           <Card>
             <Text style={styles.sectionTitle}>App Information</Text>
             <Text style={styles.paragraph}>
-              <Text style={styles.bold}>App Name:</Text> ParcelWallah
+              <Text style={styles.bold}>App Name:</Text> ParcelWalah
             </Text>
             <Text style={styles.paragraph}>
               <Text style={styles.bold}>Developer:</Text> Finnpays Technology
@@ -43,7 +43,7 @@ export default function PrivacyScreen() {
           <Card>
             <Text style={styles.sectionTitle}>Information We Collect</Text>
             <Text style={styles.paragraph}>
-              ParcelWallah collects limited information to provide parcel booking
+              ParcelWalah collects limited information to provide parcel booking
               and delivery services.
             </Text>
             <Text style={styles.paragraph}>
@@ -81,7 +81,7 @@ export default function PrivacyScreen() {
           <Card>
             <Text style={styles.sectionTitle}>Age Restriction</Text>
             <Text style={styles.paragraph}>
-              ParcelWallah is not intended for children under 13.
+              ParcelWalah is not intended for children under 13.
             </Text>
           </Card>
 

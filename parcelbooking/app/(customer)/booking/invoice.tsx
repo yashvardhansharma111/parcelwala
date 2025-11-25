@@ -62,7 +62,7 @@ export default function InvoiceScreen() {
           {/* Invoice Header */}
           <View style={styles.invoiceHeader}>
             <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>ParcelWallah</Text>
+              <Text style={styles.companyName}>ParcelWalah</Text>
               <Text style={styles.companyAddress}>
                 Your Company Address Here
               </Text>
@@ -216,7 +216,7 @@ export default function InvoiceScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Thank you for choosing ParcelWallah!
+              Thank you for choosing ParcelWalah!
             </Text>
             <Text style={styles.footerText}>
               This is a computer-generated invoice and does not require a signature.

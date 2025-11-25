@@ -76,7 +76,7 @@ module.exports = function (config = {}) {
     // Don't force a hard-coded owner — use provided value or leave undefined
     owner: config.owner || appJson.expo?.owner || undefined,
     slug: config.slug || appJson.expo?.slug || 'parcelbooking',
-    name: config.name || appJson.expo?.name || 'ParcelWallah',
+    name: config.name || appJson.expo?.name || 'ParcelWalah',
     scheme: config.scheme || appJson.expo?.scheme || 'parcelbooking',
     sdkVersion: config.sdkVersion || appJson.expo?.sdkVersion || '54.0.0',
     runtimeVersion: config.runtimeVersion || appJson.expo?.runtimeVersion || (appJson.expo?.runtimeVersion || { policy: "appVersion" }),
@@ -87,7 +87,7 @@ module.exports = function (config = {}) {
       ...(appJson.expo?.android || {}),
       ...(config.android || {}),
       package: chosenPackage,
-      label: config.android?.label || appJson.expo?.android?.label || "ParcelWallah",
+      label: config.android?.label || appJson.expo?.android?.label || "ParcelWalah",
       usesCleartextTraffic: (config.android?.usesCleartextTraffic ?? appJson.expo?.android?.usesCleartextTraffic ?? true),
       googleServicesFile: config.android?.googleServicesFile || appJson.expo?.android?.googleServicesFile || "./google-services.json",
     },

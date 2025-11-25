@@ -1,6 +1,6 @@
 /**
  * About Us Screen
- * Information about ParcelWallah
+ * Information about ParcelWalah
  */
 
 import React from "react";
@@ -16,14 +16,14 @@ export default function AboutScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Card>
-            <Text style={styles.appName}>ParcelWallah</Text>
+            <Text style={styles.appName}>ParcelWalah</Text>
             <Text style={styles.version}>Version 1.0.0</Text>
           </Card>
 
           <Card>
-            <Text style={styles.sectionTitle}>About ParcelWallah</Text>
+            <Text style={styles.sectionTitle}>About ParcelWalah</Text>
             <Text style={styles.paragraph}>
-              ParcelWallah is a comprehensive parcel booking and delivery service
+              ParcelWalah is a comprehensive parcel booking and delivery service
               designed to make shipping easy and convenient. We connect you with
               reliable delivery partners to ensure your parcels reach their
               destination safely and on time.
