@@ -761,7 +761,7 @@ export default function AdminBookingDetailsScreen() {
               <View ref={podReceiptRef} style={styles.podReceipt} collapsable={false}>
                 {/* Company Header */}
                 <View style={styles.podHeader}>
-                  <Text style={styles.podCompanyName}>Parcel Booking</Text>
+                  <Text style={styles.podCompanyName}>ParcelWallah</Text>
                   <Text style={styles.podDocumentTitle}>PROOF OF DELIVERY</Text>
                 </View>
 

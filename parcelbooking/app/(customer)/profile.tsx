@@ -161,6 +161,19 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </Card>
+
+        <Card style={styles.settingsCard}>
+          <TouchableOpacity
+            style={styles.settingsItem}
+            onPress={() => router.push("/(customer)/settings")}
+          >
+            <View style={styles.settingsIcon}>
+              <Feather name="settings" size={20} color={colors.primary} />
+            </View>
+            <Text style={styles.settingsText}>Settings</Text>
+            <Feather name="chevron-right" size={20} color={colors.textLight} />
+          </TouchableOpacity>
+        </Card>
       </ScrollView>
     </View>
   );
@@ -288,6 +301,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  settingsCard: {
+    marginTop: 16,
+  },
+  settingsItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  settingsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: `${colors.primary}20`,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  settingsText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
   },
 });
 

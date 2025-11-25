@@ -62,7 +62,7 @@ export default function InvoiceScreen() {
           {/* Invoice Header */}
           <View style={styles.invoiceHeader}>
             <View style={styles.companyInfo}>
-              <Text style={styles.companyName}>Parcel Booking</Text>
+              <Text style={styles.companyName}>ParcelWallah</Text>
               <Text style={styles.companyAddress}>
                 Your Company Address Here
               </Text>
@@ -70,10 +70,10 @@ export default function InvoiceScreen() {
                 City, State - Pincode
               </Text>
               <Text style={styles.companyAddress}>
-                Phone: +91-XXXXXXXXXX
+                Phone: +91-8462044151
               </Text>
               <Text style={styles.companyAddress}>
-                Email: info@parcelbooking.com
+                Email: Help@parcelwalah.in
               </Text>
             </View>
             <View style={styles.invoiceTitle}>
@@ -216,7 +216,7 @@ export default function InvoiceScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Thank you for choosing Parcel Booking!
+              Thank you for choosing ParcelWallah!
             </Text>
             <Text style={styles.footerText}>
               This is a computer-generated invoice and does not require a signature.

@@ -998,7 +998,7 @@ export default function AdminSettingsScreen() {
               <Card>
                 <Text style={styles.sectionTitle}>Manage Cities</Text>
                 <Text style={styles.sectionDescription}>
-                  Add and manage cities for parcel booking. Cities can be selected in the booking form.
+                  Add and manage cities for ParcelWallah. Cities can be selected in the booking form.
                 </Text>
 
                 <Input

@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ratlam.parcelbooking"
+      "bundleIdentifier": "com.ratlam.parcelbooking",
+      "infoPlist": {
+        "CFBundleDisplayName": "ParcelWallah"
+      }
     },
     "android": {
       "package": "com.ratlam.parcelbooking",

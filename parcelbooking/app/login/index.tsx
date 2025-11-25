@@ -140,7 +140,7 @@ export default function LoginScreen() {
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}>Parcel Booking</Text>
+          <Text style={styles.title}>ParcelWallah</Text>
           <Text style={styles.subtitle}>
             {otpSent
               ? "Enter the OTP sent to your phone"

@@ -1,6 +1,6 @@
 /**
- * Support Screen
- * Customer support and contact information
+ * Help & Support Screen
+ * Customer support and help information
  */
 
 import React from "react";
@@ -10,7 +10,7 @@ import { Card } from "../../components/Card";
 import { colors } from "../../theme/colors";
 import { Feather } from "@expo/vector-icons";
 
-export default function SupportScreen() {
+export default function HelpScreen() {
   const handleCall = (phone: string) => {
     Linking.openURL(`tel:${phone}`);
   };
@@ -25,7 +25,7 @@ export default function SupportScreen() {
 
   return (
     <View style={styles.container}>
-      <Header title="Support" showBack />
+      <Header title="Help & Support" showBack />
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           <Card>
@@ -39,14 +39,14 @@ export default function SupportScreen() {
           <Card>
             <TouchableOpacity
               style={styles.contactItem}
-              onPress={() => handleCall("+911234567890")}
+              onPress={() => handleCall("+918462044151")}
             >
               <View style={styles.contactIcon}>
                 <Feather name="phone" size={24} color={colors.primary} />
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactLabel}>Phone</Text>
-                <Text style={styles.contactValue}>+91 12345 67890</Text>
+                <Text style={styles.contactValue}>+91 84620 44151</Text>
               </View>
             </TouchableOpacity>
           </Card>
@@ -69,14 +69,14 @@ export default function SupportScreen() {
           <Card>
             <TouchableOpacity
               style={styles.contactItem}
-              onPress={() => handleWhatsApp("+911234567890")}
+              onPress={() => handleWhatsApp("+918462044151")}
             >
               <View style={styles.contactIcon}>
                 <Feather name="message-circle" size={24} color={colors.primary} />
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactLabel}>WhatsApp</Text>
-                <Text style={styles.contactValue}>+91 12345 67890</Text>
+                <Text style={styles.contactValue}>+91 84620 44151</Text>
               </View>
             </TouchableOpacity>
           </Card>
@@ -95,6 +95,39 @@ export default function SupportScreen() {
               <Text style={styles.hoursLabel}>Sunday:</Text>
               <Text style={styles.hoursValue}>Closed</Text>
             </View>
+          </Card>
+
+          <Card>
+            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+            
+            <Text style={styles.faqQuestion}>How do I book a parcel?</Text>
+            <Text style={styles.faqAnswer}>
+              Go to "New Booking" from the home screen, enter pickup and delivery
+              addresses, add parcel details, and proceed with payment.
+            </Text>
+
+            <Text style={styles.faqQuestion}>How can I track my parcel?</Text>
+            <Text style={styles.faqAnswer}>
+              Use the "Track Parcel" option from the home screen or go to your
+              booking history to view the status of your parcels.
+            </Text>
+
+            <Text style={styles.faqQuestion}>What payment methods are accepted?</Text>
+            <Text style={styles.faqAnswer}>
+              We accept online payments (UPI, cards) and cash on delivery (COD).
+            </Text>
+
+            <Text style={styles.faqQuestion}>Can I cancel my booking?</Text>
+            <Text style={styles.faqAnswer}>
+              Yes, you can cancel bookings before a delivery partner is assigned.
+              Check our Terms & Conditions for detailed cancellation policy.
+            </Text>
+
+            <Text style={styles.faqQuestion}>How do I request a refund?</Text>
+            <Text style={styles.faqAnswer}>
+              Contact us at Help@parcelwalah.in with your booking details. Refunds
+              are processed within 5-7 business days if approved.
+            </Text>
           </Card>
         </View>
       </ScrollView>
@@ -123,6 +156,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 20,
+    marginBottom: 4,
   },
   contactItem: {
     flexDirection: "row",
@@ -164,6 +198,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.text,
+  },
+  faqQuestion: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 6,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 12,
   },
 });
 
