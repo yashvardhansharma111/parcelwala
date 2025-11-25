@@ -11,7 +11,9 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuthStore } from "../../store/authStore";
 import { useBooking } from "../../hooks/useBooking";
@@ -34,6 +36,7 @@ export default function CustomerHomeScreen() {
   const { bookings, loading, fetchBookings } = useBooking();
   const { logout } = useAuth();
   const [cancellingBookingId, setCancellingBookingId] = React.useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   const handleCancelBooking = async (bookingId: string) => {
     Alert.alert(
@@ -133,7 +136,7 @@ export default function CustomerHomeScreen() {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Header
         title="Home"
         rightAction={
@@ -258,10 +261,7 @@ export default function CustomerHomeScreen() {
         </ScrollView>
         
         {/* Footer - Always at bottom */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Developed by ALAGU TECH SOLUTIONS
-          </Text>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
           <TouchableOpacity
             onPress={() => {
               Linking.openURL(`tel:+918462044151`);

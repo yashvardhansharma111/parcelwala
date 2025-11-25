@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Linking from 'expo-linking';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { useAuth } from '../hooks/useAuth';
 import { Loader } from '../components/Loader';
@@ -207,10 +208,10 @@ export default function RootLayout() {
         // Customer trying to access admin routes
         // BUT: Don't redirect if user is on payment success screen
         if (!pathname?.includes('payment/success') && !pathname?.includes('payment/')) {
-          try {
-            router.replace('/(customer)/home');
-          } catch (error) {
-            // Router might not be ready yet, ignore
+        try {
+          router.replace('/(customer)/home');
+        } catch (error) {
+          // Router might not be ready yet, ignore
           }
         }
       }
@@ -227,13 +228,13 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <SafeAreaProvider>
       <Stack>
         <Stack.Screen name="login/index" options={{ headerShown: false }} />
         <Stack.Screen name="(customer)" options={{ headerShown: false }} />
         <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </>
+    </SafeAreaProvider>
   );
 }

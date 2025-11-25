@@ -87,6 +87,7 @@ module.exports = function (config = {}) {
       ...(appJson.expo?.android || {}),
       ...(config.android || {}),
       package: chosenPackage,
+      label: config.android?.label || appJson.expo?.android?.label || "ParcelWallah",
       usesCleartextTraffic: (config.android?.usesCleartextTraffic ?? appJson.expo?.android?.usesCleartextTraffic ?? true),
       googleServicesFile: config.android?.googleServicesFile || appJson.expo?.android?.googleServicesFile || "./google-services.json",
     },

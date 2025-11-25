@@ -42,11 +42,11 @@ export default function PaymentSuccessScreen() {
 
         // Set a timeout to prevent getting stuck in verification (reduced to 5 seconds)
         const timeoutId = setTimeout(() => {
-          setVerifying(false);
+            setVerifying(false);
           // Still try to refresh bookings even if we don't have bookingId (in background)
-          fetchBookings().catch((err) => {
+            fetchBookings().catch((err) => {
             if (__DEV__) console.error('[PaymentSuccess] Error refreshing bookings on timeout:', err);
-          });
+            });
           // Don't auto-navigate - let user see the success message and click button
         }, 5000); // 5 second timeout (reduced from 10s)
 
@@ -80,11 +80,11 @@ export default function PaymentSuccessScreen() {
         // Refresh all bookings once in background (don't wait for it)
         fetchBookings().catch((error) => {
           if (__DEV__) console.error('[PaymentSuccess] Background refresh failed:', error);
-        });
+          });
 
         clearTimeout(timeoutId);
         setVerifying(false);
-      } catch (error) {
+        } catch (error) {
         // Log error but don't show to user - payment was successful, just couldn't fetch booking details
         if (__DEV__) {
           console.warn('[PaymentSuccess] Error in booking resolution (non-critical):', error);
@@ -147,7 +147,7 @@ export default function PaymentSuccessScreen() {
 
         <Button
           title="Go to Home"
-                  onPress={() => {
+          onPress={() => {
                     try {
                       router.replace("/(customer)/home" as any);
                     } catch (error) {
@@ -157,15 +157,15 @@ export default function PaymentSuccessScreen() {
                       } catch (pushError) {
                         if (__DEV__) console.error('[PaymentSuccess] Push also failed:', pushError);
                       }
-                    }
-                  }}
+            }
+          }}
           style={styles.button}
         />
 
         {resolvedBookingId && (
-          <Button
+        <Button
             title="View Booking Details"
-            variant="outline"
+          variant="outline"
                     onPress={async () => {
                       try {
                         router.push(`/(customer)/booking/track?id=${resolvedBookingId}` as any);
@@ -173,8 +173,8 @@ export default function PaymentSuccessScreen() {
                         if (__DEV__) console.error('[PaymentSuccess] Error navigating to booking details:', error);
                       }
                     }}
-            style={styles.button}
-          />
+          style={styles.button}
+        />
         )}
 
         <Text style={styles.redirectingMessage}>
