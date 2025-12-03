@@ -5,8 +5,6 @@
   },
   "build": {
     "production": {
-      "workflow": "managed",
-      "installCommand": "npm ci",
       "android": {
         "buildType": "app-bundle",
         "autoIncrement": "versionCode"
@@ -25,8 +23,6 @@
       }
     },
     "apk": {
-      "workflow": "managed",
-      "installCommand": "npm ci",
       "android": {
         "buildType": "apk",
         "autoIncrement": "versionCode",
