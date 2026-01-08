@@ -357,3 +357,53 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
+/**
+ * Update user profile
+ */
+export const updateUserProfile = async (
+  userId: string,
+  updates: { name?: string }
+): Promise<User> => {
+  try {
+    const userDoc = await db.collection("users").doc(userId);
+    const userSnapshot = await userDoc.get();
+
+    if (!userSnapshot.exists) {
+      throw createError("User not found", 404);
+    }
+
+    const updateData: any = {
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (updates.name !== undefined) {
+      if (typeof updates.name !== "string" || updates.name.trim().length === 0) {
+        throw createError("Name must be a non-empty string", 400);
+      }
+      updateData.name = updates.name.trim();
+    }
+
+    await userDoc.update(updateData);
+
+    // Fetch updated user
+    const updatedDoc = await userDoc.get();
+    const data = updatedDoc.data()!;
+
+    return {
+      id: updatedDoc.id,
+      phoneNumber: data.phoneNumber,
+      name: data.name,
+      role: data.role,
+      refreshToken: data.refreshToken,
+      createdAt: data.createdAt?.toDate() || new Date(),
+      updatedAt: data.updatedAt?.toDate() || new Date(),
+    };
+  } catch (error: any) {
+    console.error("Error updating user profile:", error);
+    if (error.statusCode) {
+      throw error;
+    }
+    throw createError("Failed to update user profile", 500);
+  }
+};
+

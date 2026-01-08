@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from "express";
-import { getUserById } from "../services/userService";
+import { getUserById, updateUserProfile } from "../services/userService";
 import { saveFCMToken } from "../services/notificationService";
 import { createError } from "../utils/errorHandler";
 
@@ -36,6 +36,43 @@ export const getProfile = async (
       data: {
         user: userData,
       },
+    });
+  } catch (error: any) {
+    next(error);
+  }
+};
+
+/**
+ * Update user profile
+ * PUT /user/profile
+ */
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      throw createError("User not authenticated", 401);
+    }
+
+    const { name } = req.body;
+
+    if (name !== undefined && (typeof name !== "string" || name.trim().length === 0)) {
+      throw createError("Name must be a non-empty string", 400);
+    }
+
+    const updatedUser = await updateUserProfile(req.user.uid, { name });
+
+    // Remove sensitive data
+    const { refreshToken, ...userData } = updatedUser;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        user: userData,
+      },
+      message: "Profile updated successfully",
     });
   } catch (error: any) {
     next(error);

@@ -112,22 +112,24 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     
     // ============================================================================
-    // PLAY STORE TESTING BYPASS
-    // For phone number 9999999999, skip SMS sending (OTP 123456 will always work)
+    // DEMO USER BYPASS
+    // For phone number +919999999999, always use OTP 000000 (no SMS sent)
     // ============================================================================
-    const testPhoneNumber = "+919999999999"; // Normalized format
-    if (normalizedPhone === testPhoneNumber) {
+    const demoPhoneNumber = "+919999999999"; // Normalized format
+    if (normalizedPhone === demoPhoneNumber) {
+      const demoOTP = "000000";
       console.log("=".repeat(60));
-      console.log("🧪 PLAY STORE TEST MODE - Test number detected");
+      console.log("🧪 DEMO USER MODE - Demo number detected");
       console.log("=".repeat(60));
       console.log(`📱 Phone Number: ${normalizedPhone}`);
-      console.log(`🔐 Test OTP Code: 123456 (always valid for this number)`);
+      console.log(`🔐 OTP Code: ${demoOTP}`);
       console.log(`⏰ Valid for: Always (no expiry)`);
       console.log("=".repeat(60));
-      console.log(`✅ Test OTP mode activated. Use OTP: 123456`);
+      console.log(`✅ Demo OTP mode activated. Use OTP: ${demoOTP}`);
       console.log("=".repeat(60));
-      // Don't store anything in cache - verification will bypass cache for this number
-      return; // Exit early - no SMS sent, no cache storage needed
+      // Store OTP in cache so verification works properly
+      cacheService.setOTP(normalizedPhone, demoOTP, 3600); // Store for 1 hour
+      return; // Exit early - no SMS sent
     }
 
     // Generate 6-digit OTP
@@ -142,35 +144,31 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
     const phone = extractPhoneNumber(phoneNumber);
 
     // ============================================================================
-    // DEVELOPMENT MODE CHECK - Switch between dev and prod here
+    // CHECK DEV MODE: Use environment variable or NODE_ENV
     // ============================================================================
-    // Option 1: Use OTP_DEV_MODE environment variable (recommended)
-    // Set OTP_DEV_MODE=true in .env for development, false for production
-    const OTP_DEV_MODE = process.env.OTP_DEV_MODE === "true" || ENV.NODE_ENV === "development";
-    
-    // Option 2: Force dev mode by uncommenting the line below (overrides env)
-    // const OTP_DEV_MODE = true; // <-- Uncomment this line to force dev mode
-    
-    // Option 3: Force prod mode by uncommenting the line below (overrides env)
-    // const OTP_DEV_MODE = false; // <-- Uncomment this line to force prod mode
-    
-    // ============================================================================
-    // DEVELOPMENT MODE: Log OTP to console (no real SMS sent)
-    // ============================================================================
-    // To enable dev mode: Set OTP_DEV_MODE=true in .env OR uncomment the force line above
-    if (OTP_DEV_MODE) {
+    // Determine if we're in dev mode:
+    // - OTP_DEV_MODE="true" in .env → dev mode (log to console)
+    // - OTP_DEV_MODE="false" or empty → production mode (send real SMS)
+    // - NODE_ENV="development" → dev mode (log to console)
+    // - NODE_ENV="production" → production mode (send real SMS)
+    const isDevMode = 
+      ENV.OTP_DEV_MODE?.toLowerCase() === "true" || 
+      (ENV.OTP_DEV_MODE === "" && ENV.NODE_ENV === "development");
+
+    if (isDevMode) {
+      // ============================================================================
+      // DEVELOPMENT MODE: Log OTP to console (NO SMS SENT)
+      // ============================================================================
       console.log("=".repeat(60));
-      console.log("🔧 DEVELOPMENT MODE - OTP NOT SENT VIA SMS");
+      console.log("🔧 DEVELOPMENT MODE - OTP LOGGED TO CONSOLE (NO SMS SENT)");
       console.log("=".repeat(60));
       console.log(`📱 Phone Number: ${normalizedPhone}`);
       console.log(`🔐 OTP Code: ${otp}`);
       console.log(`⏰ Valid for: 10 minutes`);
       console.log("=".repeat(60));
       console.log(`✅ OTP generated and stored in cache with key: ${normalizedPhone}`);
-      console.log(`💡 To enable real SMS (production mode):`);
-      console.log(`   1. Set OTP_DEV_MODE=false in .env`);
-      console.log(`   2. Set RENFLAIR_API_KEY=your_api_key in .env`);
-      console.log(`   3. Set NODE_ENV=production in .env`);
+      console.log("=".repeat(60));
+      console.log(`💡 To enable real SMS, set OTP_DEV_MODE=false in .env`);
       console.log("=".repeat(60));
       return; // Exit early - no SMS sent in dev mode
     }
@@ -178,77 +176,69 @@ export const sendOTP = async (phoneNumber: string): Promise<void> => {
     // ============================================================================
     // PRODUCTION MODE: Send real SMS via Renflair API
     // ============================================================================
-    // To enable prod mode: Set OTP_DEV_MODE=false in .env AND ensure RENFLAIR_API_KEY is set
-    
-    // Validate API key is configured for production
-    const hasApiKey = ENV.RENFLAIR_API_KEY && ENV.RENFLAIR_API_KEY.trim() !== "";
-    if (!hasApiKey) {
-      console.warn("⚠️  WARNING: RENFLAIR_API_KEY not configured. Falling back to dev mode (logging only).");
+    if (!ENV.RENFLAIR_API_KEY) {
+      console.error("❌ RENFLAIR_API_KEY not configured in .env");
+      throw createError("SMS service not configured. Please contact support.", 500);
+    }
+
+    try {
+      // Build Renflair API URL
+      const apiUrl = `${ENV.RENFLAIR_API_URL}?API=${encodeURIComponent(ENV.RENFLAIR_API_KEY)}&PHONE=${encodeURIComponent(phone)}&OTP=${encodeURIComponent(otp)}`;
+      
       console.log("=".repeat(60));
-      console.log("🔧 FALLBACK TO DEVELOPMENT MODE - OTP NOT SENT VIA SMS");
+      console.log("📤 PRODUCTION MODE - Sending OTP via Renflair SMS API");
       console.log("=".repeat(60));
       console.log(`📱 Phone Number: ${normalizedPhone}`);
       console.log(`🔐 OTP Code: ${otp}`);
+      console.log(`🌐 API URL: ${ENV.RENFLAIR_API_URL}`);
+      console.log("=".repeat(60));
+
+      // Send SMS via Renflair API
+      const response = await axios.get(apiUrl, {
+        timeout: 10000, // 10 second timeout
+      });
+
+      console.log(`✅ Renflair API Response Status: ${response.status}`);
+      console.log(`✅ Renflair API Response Data:`, response.data);
+      console.log("=".repeat(60));
+      console.log(`✅ OTP sent successfully to ${normalizedPhone}`);
+      console.log("=".repeat(60));
+
+      // Renflair API returns success message in response
+      if (response.data && typeof response.data === "string") {
+        const responseText = response.data.toLowerCase();
+        if (responseText.includes("error") || responseText.includes("failed")) {
+          console.error("❌ Renflair API returned error:", response.data);
+          throw createError("Failed to send OTP. Please try again.", 500);
+        }
+      }
+    } catch (smsError: any) {
+      console.error("❌ Error sending SMS via Renflair API:", smsError);
+      
+      // Log OTP to console as fallback (so user can still test)
+      console.log("=".repeat(60));
+      console.log("⚠️  SMS SEND FAILED - OTP LOGGED TO CONSOLE AS FALLBACK");
+      console.log("=".repeat(60));
+      console.log(`📱 Phone Number: ${normalizedPhone}`);
+      console.log(`🔐 OTP Code: ${otp} (use this for testing)`);
       console.log(`⏰ Valid for: 10 minutes`);
       console.log("=".repeat(60));
-      console.log(`💡 To enable real SMS, set RENFLAIR_API_KEY in your .env file`);
-      console.log("=".repeat(60));
-      return;
-    }
-
-    // ============================================================================
-    // PRODUCTION SMS CODE - Comment out this entire block to disable SMS sending
-    // ============================================================================
-    // To disable SMS sending (dev mode), comment out from here to the end of the try block
-    // OR set OTP_DEV_MODE=true in .env (recommended method above)
-    
-    // Renflair API endpoint for OTP
-    const apiUrl = "https://sms.renflair.in/V1.php";
-    
-    // Build query parameters
-    const params = new URLSearchParams({
-      API: ENV.RENFLAIR_API_KEY,
-      PHONE: phone,
-      OTP: otp,
-    });
-
-    const fullUrl = `${apiUrl}?${params.toString()}`;
-
-    console.log(`📤 Sending OTP to ${phone} via Renflair API...`);
-    
-    // Send SMS via Renflair API (GET request)
-    const response = await axios.get(fullUrl, {
-      timeout: 10000, // 10 second timeout
-    });
-    
-    // ============================================================================
-    // End of Production SMS Code
-    // ============================================================================
-
-    // Log response for debugging
-    console.log("Renflair API Response:", {
-      status: response.status,
-      data: response.data,
-    });
-
-    // Check if SMS was sent successfully
-    // Renflair API typically returns JSON with status
-    if (response.status !== 200) {
-      throw createError("Failed to send OTP via SMS", 500);
-    }
-
-    // Check response data for success/failure indicators
-    const responseData = response.data;
-    if (typeof responseData === "object") {
-      // If response has error or failure status
-      if (responseData.error || responseData.status === "error" || responseData.status === false) {
-        console.error("Renflair API Error:", responseData);
-        throw createError(responseData.message || "Failed to send OTP via SMS", 500);
+      
+      // Still throw error so frontend knows SMS failed
+      if (smsError.response?.data) {
+        console.error("Renflair API Error Response:", smsError.response.data);
+        throw createError(
+          smsError.response.data.message || "Failed to send OTP. Please try again.",
+          500
+        );
       }
+      
+      if (smsError.code === "ECONNABORTED") {
+        throw createError("Request timeout. Please check your internet connection.", 500);
+      }
+      
+      throw createError("Failed to send OTP. Please try again.", 500);
     }
-
-    console.log(`✅ OTP sent successfully to ${phone} via SMS`);
-    console.log(`📝 OTP stored in cache with key: ${normalizedPhone}`);
   } catch (error: any) {
     console.error("Error sending OTP:", error);
     
@@ -279,17 +269,27 @@ export const verifyOTP = (phoneNumber: string, otp: string): boolean => {
     const normalizedPhone = normalizePhoneNumber(phoneNumber);
     
     // ============================================================================
-    // PLAY STORE TESTING BYPASS
-    // For phone number 9999999999, always accept OTP 123456
+    // DEMO USER BYPASS
+    // For phone number +919999999999, always accept OTP 000000
     // ============================================================================
-    const testPhoneNumber = "+919999999999"; // Normalized format
-    if (normalizedPhone === testPhoneNumber && otp === "123456") {
-      console.log(`✅ PLAY STORE TEST MODE: Accepting OTP 123456 for test number ${normalizedPhone}`);
+    const demoPhoneNumber = "+919999999999"; // Normalized format
+    if (normalizedPhone === demoPhoneNumber && otp === "000000") {
+      console.log(`✅ DEMO USER MODE: Accepting OTP 000000 for demo number ${normalizedPhone}`);
       // Delete any existing OTP from cache if present
       if (cacheService.hasOTP(normalizedPhone)) {
         cacheService.deleteOTP(normalizedPhone);
       }
       return true;
+    }
+    
+    // Also check if OTP is stored in cache (for demo user, we store it)
+    if (normalizedPhone === demoPhoneNumber) {
+      const storedOTP = cacheService.getOTP(normalizedPhone);
+      if (storedOTP === otp) {
+        console.log(`✅ DEMO USER MODE: OTP verified from cache for ${normalizedPhone}`);
+        cacheService.deleteOTP(normalizedPhone);
+        return true;
+      }
     }
     
     console.log(`🔍 Verifying OTP for: ${normalizedPhone}`);

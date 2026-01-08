@@ -75,7 +75,7 @@ export const getAddressDetails = async (
     const response = await axios.get<NominatimResult>(url, {
       params,
       headers: {
-        "User-Agent": "ParcelBookingSystem/1.0", // Required by Nominatim
+        "User-Agent": "ParcelWallahSystem/1.0", // Required by Nominatim
       },
     });
 

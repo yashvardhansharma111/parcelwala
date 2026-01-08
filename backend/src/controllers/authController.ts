@@ -42,11 +42,31 @@ export const sendOtp = async (
       throw createError("Invalid phone number format", 400);
     }
 
-    // Send OTP
+    // Normalize phone number for demo user check
+    const normalizePhone = (phone: string): string => {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.startsWith("91") && digits.length === 12) {
+        return `+91${digits.slice(2)}`;
+      } else if (digits.length === 10) {
+        return `+91${digits}`;
+      }
+      return phone.startsWith("+") ? phone : `+91${phone}`;
+    };
+    const normalizedPhone = normalizePhone(phoneNumber);
+    const isDemoUser = normalizedPhone === "+919999999999";
+
+    // Check if user exists with this phone number
+    const existingUser = await getUserByPhoneNumber(phoneNumber);
+    
+    // Send OTP for all users (both existing and new)
+    // This allows signup flow to work properly
     await sendOTP(phoneNumber);
 
+    // Always return success with empty data to allow OTP input to show
+    // The requiresSignup check will happen during OTP verification
     res.status(200).json({
       success: true,
+      data: {},
       message: "OTP sent successfully",
     });
   } catch (error: any) {
@@ -71,8 +91,34 @@ export const verifyOtp = async (
       throw createError("Phone number is required", 400);
     }
 
-    if (!otp || typeof otp !== "string" || otp.length !== 6) {
-      throw createError("Valid 6-digit OTP is required", 400);
+    // Normalize phone number for demo user check
+    const normalizePhone = (phone: string): string => {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.startsWith("91") && digits.length === 12) {
+        return `+91${digits.slice(2)}`;
+      } else if (digits.length === 10) {
+        return `+91${digits}`;
+      }
+      return phone.startsWith("+") ? phone : `+91${phone}`;
+    };
+    const normalizedPhone = normalizePhone(phoneNumber);
+    const isDemoUser = normalizedPhone === "+919999999999";
+
+    // Validate OTP format (6 digits for all users)
+    if (!otp || typeof otp !== "string") {
+      throw createError("OTP is required", 400);
+    }
+    
+    if (isDemoUser) {
+      // Demo user must use 6-digit OTP "000000"
+      if (otp.length !== 6 || otp !== "000000") {
+        throw createError("Invalid OTP. Please use 000000 for demo user.", 400);
+      }
+    } else {
+      // Regular users need 6-digit OTP
+      if (otp.length !== 6) {
+        throw createError("Valid 6-digit OTP is required", 400);
+      }
     }
 
     // Verify OTP

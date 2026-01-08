@@ -15,6 +15,9 @@ router.use(authenticate);
 // Get user profile
 router.get("/profile", userController.getProfile);
 
+// Update user profile
+router.put("/profile", userController.updateProfile);
+
 // Save FCM Token for push notifications
 router.post("/fcm-token", userController.saveFCMTokenEndpoint);
 

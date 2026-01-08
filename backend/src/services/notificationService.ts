@@ -335,7 +335,7 @@ const sendOneSignalNotification = async (
       
       // Check if error is "not subscribed" - this is recoverable
       const hasNotSubscribedError = errorMessages.some((msg: string) => 
-        msg.toLowerCase().includes("not subscribed") || 
+        msg.toLowerCase().includes("not subscribed") ||
         msg.toLowerCase().includes("unsubscribed")
       );
       
@@ -343,7 +343,16 @@ const sendOneSignalNotification = async (
         // This is expected - user hasn't granted permissions or SDK hasn't initialized
         // Don't log as error, just as info
         console.log(`ℹ️  Players are not subscribed - user may need to grant notification permissions in app`);
-        // Don't log full response for unsubscribed errors to reduce noise
+        // If we have a successful response ID, count as sent (OneSignal accepted the request)
+        // Only count unsubscribed users as failed if we can determine the count
+        if (response.data.id) {
+          // OneSignal accepted the request, so notifications were queued/sent
+          // Unsubscribed users won't receive it, but the request was successful
+          const unsubscribedCount = response.data.warnings?.invalid_external_user_ids?.length || 0;
+          const sent = playerIdsOrExternalIds.length - unsubscribedCount;
+          return { sent, failed: unsubscribedCount };
+        }
+        // If no ID, the entire request failed
         return { sent: 0, failed: playerIdsOrExternalIds.length };
       }
       
@@ -354,21 +363,43 @@ const sendOneSignalNotification = async (
       return { sent: 0, failed: playerIdsOrExternalIds.length };
     }
 
+    // If we have a successful response ID, the notification was accepted by OneSignal
     if (response.data.id) {
       console.log("✅ OneSignal notification sent successfully:", response.data.id);
       console.log("📊 Response:", {
         id: response.data.id,
         recipients: response.data.recipients,
         errors: response.data.errors,
+        warnings: response.data.warnings,
       });
       
-      // Check actual recipients count
-      const actualRecipients = response.data.recipients || 0;
-      const failed = playerIdsOrExternalIds.length - actualRecipients;
+      // OneSignal successfully accepted the notification request
+      // When OneSignal returns an ID, it means the notification was queued/sent successfully
+      // The key insight: If OneSignal accepted the request (returned an ID), the notification
+      // was sent to all valid subscribers. Warnings about invalid IDs are informational only.
       
-      return { sent: actualRecipients, failed };
+      // Priority 1: Use recipients count if available (most accurate)
+      if (response.data.recipients !== undefined && response.data.recipients !== null) {
+        const recipients = typeof response.data.recipients === 'number' 
+          ? response.data.recipients 
+          : parseInt(String(response.data.recipients), 10) || 0;
+        const sent = Math.max(0, Math.min(recipients, playerIdsOrExternalIds.length));
+        const failed = Math.max(0, playerIdsOrExternalIds.length - sent);
+        console.log(`ℹ️  OneSignal reported ${recipients} recipients out of ${playerIdsOrExternalIds.length} users`);
+        return { sent, failed };
+      }
+      
+      // Priority 2: If no recipients count, assume all were sent
+      // Key insight: If OneSignal returned an ID, it means the notification request was accepted
+      // Warnings about invalid IDs are informational only - they don't mean the notification failed
+      // The notification was queued/sent to all valid subscribers
+      // Only actual errors (in the errors array) should be counted as failures
+      console.log(`ℹ️  OneSignal accepted notification request - counting all ${playerIdsOrExternalIds.length} as sent`);
+      console.log(`ℹ️  Note: Warnings about invalid IDs are informational only and don't indicate failure`);
+      return { sent: playerIdsOrExternalIds.length, failed: 0 };
     }
 
+    // No ID means the request wasn't accepted
     return { sent: 0, failed: playerIdsOrExternalIds.length };
   } catch (error: any) {
     console.error("❌ Error sending OneSignal notification:", error);
@@ -390,40 +421,48 @@ export const sendNotificationToUser = async (
   notification: NotificationData
 ): Promise<void> => {
   try {
+    console.log(`[sendNotificationToUser] 📤 Attempting to send notification to user ${userId}:`, {
+      title: notification.title,
+      body: notification.body,
+    });
+    
     // Try to get Player ID first
     const playerId = await getUserOneSignalPlayerId(userId);
     
     if (playerId) {
       // Try Player ID first
-      console.log(`📤 Sending to user ${userId} using Player ID: ${playerId.substring(0, 8)}...`);
+      console.log(`[sendNotificationToUser] 📤 Attempting to send to user ${userId} using Player ID: ${playerId.substring(0, 8)}...`);
       try {
         const result = await sendOneSignalNotification([playerId], notification, false);
         
         // Check if notification was sent successfully
         if (result.sent > 0) {
-          console.log(`✅ Notification sent successfully to Player ID`);
+          console.log(`[sendNotificationToUser] ✅ Notification sent successfully to user ${userId} using Player ID (sent: ${result.sent}, failed: ${result.failed})`);
           return;
         }
         
         // If failed, check if it's because player is not subscribed
-        console.log(`⚠️  Notification failed with Player ID (sent: ${result.sent}, failed: ${result.failed})`);
-        console.log(`📤 Falling back to external user ID for user ${userId}`);
+        console.log(`[sendNotificationToUser] ⚠️  Notification failed with Player ID (sent: ${result.sent}, failed: ${result.failed})`);
+        console.log(`[sendNotificationToUser] 📤 Falling back to external user ID for user ${userId}`);
       } catch (playerIdError: any) {
         // If Player ID method fails, fall back to external user ID
-        console.log(`⚠️  Player ID method failed: ${playerIdError.message}`);
-        console.log(`📤 Falling back to external user ID for user ${userId}`);
+        console.log(`[sendNotificationToUser] ⚠️  Player ID method failed: ${playerIdError.message}`);
+        console.log(`[sendNotificationToUser] 📤 Falling back to external user ID for user ${userId}`);
       }
+    } else {
+      console.log(`[sendNotificationToUser] ℹ️  No Player ID found for user ${userId}, using external user ID`);
     }
     
     // Fall back to external user ID (Firebase UID)
     // This works even if the player is not subscribed, as long as external_user_id is set
-    console.log(`📤 Sending to user ${userId} using external user ID`);
+    console.log(`[sendNotificationToUser] 📤 Sending to user ${userId} using external user ID`);
     try {
       const result = await sendOneSignalNotification([userId], notification, true);
       if (result.sent > 0) {
-        console.log(`✅ Notification sent successfully using external user ID`);
+        console.log(`[sendNotificationToUser] ✅ Notification sent successfully to user ${userId} using external user ID (sent: ${result.sent}, failed: ${result.failed})`);
       } else {
-        console.warn(`⚠️  Notification failed with external user ID (sent: ${result.sent}, failed: ${result.failed})`);
+        console.warn(`[sendNotificationToUser] ⚠️  Notification failed with external user ID for user ${userId} (sent: ${result.sent}, failed: ${result.failed})`);
+        console.warn(`[sendNotificationToUser] ℹ️  This may be because the user is not subscribed to notifications or doesn't have OneSignal Player ID registered`);
       }
     } catch (externalIdError: any) {
       // Check if it's an unsubscribed error - this is expected and not critical
@@ -431,10 +470,10 @@ export const sendNotificationToUser = async (
                                    externalIdError.response?.data?.warnings?.invalid_external_user_ids;
       
       if (isUnsubscribedError) {
-        console.log(`ℹ️  User ${userId} is not subscribed to notifications - this is expected if permissions not granted`);
+        console.log(`[sendNotificationToUser] ℹ️  User ${userId} is not subscribed to notifications - this is expected if permissions not granted`);
       } else {
-        console.error(`❌ Both Player ID and external user ID methods failed for user ${userId}`);
-        console.error(`Error details:`, externalIdError.message);
+        console.error(`[sendNotificationToUser] ❌ Both Player ID and external user ID methods failed for user ${userId}`);
+        console.error(`[sendNotificationToUser] Error details:`, externalIdError.message);
       }
       // Don't throw - notification failure shouldn't break the flow
     }
@@ -574,6 +613,14 @@ export const sendBookingStatusNotification = async (
   newStatus: BookingStatus
 ): Promise<void> => {
   try {
+    console.log(`[sendBookingStatusNotification] 📬 Starting notification for booking status change:`, {
+      userId,
+      bookingId,
+      trackingNumber,
+      oldStatus,
+      newStatus,
+    });
+    
     const statusMessages: Record<BookingStatus, { title: string; body: string }> = {
       PendingPayment: {
         title: "Booking Created",
@@ -607,9 +654,14 @@ export const sendBookingStatusNotification = async (
 
     const message = statusMessages[newStatus];
     if (!message) {
-      console.warn(`No notification message for status: ${newStatus}`);
+      console.warn(`[sendBookingStatusNotification] ⚠️  No notification message for status: ${newStatus}`);
       return;
     }
+
+    console.log(`[sendBookingStatusNotification] 📝 Notification message prepared:`, {
+      title: message.title,
+      body: message.body,
+    });
 
     await sendNotificationToUser(userId, {
       title: message.title,
@@ -622,9 +674,11 @@ export const sendBookingStatusNotification = async (
         newStatus,
       },
     });
+    
+    console.log(`[sendBookingStatusNotification] ✅ Notification request completed for user ${userId}, booking ${bookingId}`);
   } catch (error: any) {
     // Don't throw error - notification failure shouldn't break booking flow
-    console.error("Error sending booking status notification:", error);
+    console.error(`[sendBookingStatusNotification] ❌ Error sending booking status notification for user ${userId}, booking ${bookingId}:`, error);
   }
 };
 
