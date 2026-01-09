@@ -77,7 +77,8 @@ export default function SignupScreen() {
     const formattedPhone = `+91${phoneDigits}`;
 
     try {
-      await sendOTP(formattedPhone);
+      // Pass name to indicate this is a signup request
+      await sendOTP(formattedPhone, name.trim());
       Alert.alert("Success", "OTP sent to your phone number");
     } catch (err: any) {
       Alert.alert("Error", err.message || "Failed to send OTP");

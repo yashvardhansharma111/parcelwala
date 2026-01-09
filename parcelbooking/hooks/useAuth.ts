@@ -50,11 +50,11 @@ export const useAuth = () => {
     }
   };
 
-  const sendOTP = async (phoneNumber: string) => {
+  const sendOTP = async (phoneNumber: string, name?: string) => {
     try {
       setError(null);
       setLoading(true);
-      const result = await authService.sendOTP(phoneNumber);
+      const result = await authService.sendOTP(phoneNumber, name);
       
       // Check if user needs to signup
       if (result.requiresSignup) {

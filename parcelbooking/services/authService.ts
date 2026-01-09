@@ -20,15 +20,17 @@ let phoneNumberForOTP: string | null = null;
 
 /**
  * Send OTP to phone number
+ * @param phoneNumber - Phone number
+ * @param name - Optional name (for signup requests)
  */
-export const sendOTP = async (phoneNumber: string): Promise<{ requiresSignup?: boolean }> => {
+export const sendOTP = async (phoneNumber: string, name?: string): Promise<{ requiresSignup?: boolean }> => {
   try {
     const formattedPhone = phoneNumber.startsWith("+")
       ? phoneNumber
       : `+91${phoneNumber}`;
 
     phoneNumberForOTP = formattedPhone;
-    const response = await authApi.sendOTP(formattedPhone);
+    const response = await authApi.sendOTP(formattedPhone, name);
     
     // Check if backend indicates user needs to signup
     // response might be undefined if no data field, so check safely
