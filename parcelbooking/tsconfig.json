@@ -17,6 +17,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "incremental": true,
+    "types": [],
     "paths": {
       "@/*": [
         "./*"
