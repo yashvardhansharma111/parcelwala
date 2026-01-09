@@ -77,7 +77,8 @@ export default function SignupScreen() {
     const formattedPhone = `+91${phoneDigits}`;
 
     try {
-      // Pass name to indicate this is a signup request
+      // Pass name to indicate this is a signup request (not login)
+      // This allows backend to send OTP for new users on signup screen
       await sendOTP(formattedPhone, name.trim());
       Alert.alert("Success", "OTP sent to your phone number");
     } catch (err: any) {

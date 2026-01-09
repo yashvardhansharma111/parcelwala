@@ -194,8 +194,6 @@ const refreshAccessToken = async (): Promise<string | null> => {
 export const authApi = {
   /**
    * Send OTP to phone number
-   * @param phoneNumber - Phone number
-   * @param name - Optional name (for signup requests)
    */
   sendOTP: async (phoneNumber: string, name?: string): Promise<{ requiresSignup?: boolean }> => {
     return await apiRequest<{ requiresSignup?: boolean }>("/auth/send-otp", {

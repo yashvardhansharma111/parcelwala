@@ -21,7 +21,7 @@ let phoneNumberForOTP: string | null = null;
 /**
  * Send OTP to phone number
  * @param phoneNumber - Phone number
- * @param name - Optional name (for signup requests)
+ * @param name - Optional name (for signup requests to distinguish from login)
  */
 export const sendOTP = async (phoneNumber: string, name?: string): Promise<{ requiresSignup?: boolean }> => {
   try {
