@@ -1,5 +1,14 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+// Block JFrog dependency completely
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == "org.jfrog.buildinfo") {
+            throw new GradleException("JFrog plugin blocked")
+        }
+    }
+}
+
 buildscript {
   repositories {
     google()
