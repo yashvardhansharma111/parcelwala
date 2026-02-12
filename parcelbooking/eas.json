@@ -8,7 +8,7 @@
       "android": {
         "buildType": "app-bundle",
         "autoIncrement": "versionCode",
-        "gradleCommand": "--no-init-scripts :app:bundleRelease"
+        "gradleCommand": ":app:bundleRelease"
       },
       "distribution": "store",
       "env": {
@@ -28,7 +28,7 @@
         "buildType": "apk",
         "autoIncrement": "versionCode",
         "applicationArchivePath": "android/app/build/outputs/apk/release/app-release.apk",
-        "gradleCommand": "--no-init-scripts :app:assembleRelease"
+        "gradleCommand": ":app:assembleRelease"
       },
       "distribution": "internal",
       "env": {
