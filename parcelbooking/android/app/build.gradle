@@ -87,12 +87,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.ratlam.parcelbooking'
+    namespace 'com.parcelwala.app'
     defaultConfig {
-        applicationId 'com.ratlam.parcelbooking'
+        applicationId 'com.parcelwala.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode 70
         versionName "1.0.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
@@ -110,8 +110,9 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // EAS will automatically inject the signing config for release builds
-            // No need to specify signingConfig here - EAS handles it remotely
+            // Caution! In production, you need to generate your own keystore file.
+            // see https://reactnative.dev/docs/signed-apk-android.
+            signingConfig signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

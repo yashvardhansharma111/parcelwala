@@ -20,7 +20,7 @@ const isWorkletsPlugin = (plugin) => {
 module.exports = function (config = {}) {
   // Environment / app.json / defaults
   const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || (appJson.expo?.extra?.onesignal?.appId) || null;
-  const DEFAULT_PACKAGE = "com.ratlam.parcelbooking";
+  const DEFAULT_PACKAGE = "com.parcelwala.app";
 
   // Resolve package with precedence: env var -> config.android.package -> app.json -> DEFAULT
   const envPackage = process.env.ANDROID_PACKAGE || process.env.EXPO_ANDROID_PACKAGE || null;
