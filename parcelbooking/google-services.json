@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:617047895561:android:bfd8209adcdc9d92c292d8",
+        "android_client_info": {
+          "package_name": "com.parcelwala.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsomZTWhGKSRrwArG1xZ3-O_O1gOiIiLY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:617047895561:android:d36a29abad467147c292d8",
         "android_client_info": {
           "package_name": "com.parcelwala.package"
@@ -28,7 +47,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:617047895561:android:91f311b2598897efc292d8",
         "android_client_info": {
-          "package_name": "com.parcelwala.app"
+          "package_name": "com.ratlam.parcelbooking"
         }
       },
       "oauth_client": [],

@@ -561,7 +561,8 @@ export const mapApi = {
   },
 
   /**
-   * Calculate fare based on locations and weight
+   * Calculate fare based on locations and weight.
+   * parcelType "Document" applies flat ₹30 fare.
    */
   calculateFare: async (
     pickup: { lat: number; lon: number },
@@ -571,7 +572,8 @@ export const mapApi = {
     dropPincode?: string,
     couponCode?: string,
     pickupCity?: string,
-    dropCity?: string
+    dropCity?: string,
+    parcelType?: string
   ): Promise<{
     distanceInKm: number;
     baseFare: number;
@@ -595,6 +597,7 @@ export const mapApi = {
         couponCode,
         pickupCity,
         dropCity,
+        parcelType,
       }),
     });
   },

@@ -89,6 +89,7 @@ export const getAddressDetails = async (
 
 /**
  * Calculate fare for booking
+ * Pass parcelType "Document" for flat ₹30 fare.
  */
 export const calculateFare = async (
   pickup: { lat: number; lon: number },
@@ -98,7 +99,8 @@ export const calculateFare = async (
   dropPincode?: string,
   couponCode?: string,
   pickupCity?: string,
-  dropCity?: string
+  dropCity?: string,
+  parcelType?: string
 ): Promise<{
   distanceInKm: number;
   baseFare: number;
@@ -112,7 +114,7 @@ export const calculateFare = async (
   };
 }> => {
   try {
-    return await mapApi.calculateFare(pickup, drop, weight, pickupPincode, dropPincode, couponCode, pickupCity, dropCity);
+    return await mapApi.calculateFare(pickup, drop, weight, pickupPincode, dropPincode, couponCode, pickupCity, dropCity, parcelType);
   } catch (error: any) {
     console.error("Error calculating fare:", error);
     throw new Error(error.message || "Failed to calculate fare");

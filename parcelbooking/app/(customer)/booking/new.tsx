@@ -27,145 +27,12 @@ import { Address, ParcelDetails, PaymentMethod } from "../../../utils/types";
 import { validateAddress } from "../../../utils/validators";
 import {
   getAutocompleteSuggestions,
-  getAddressDetails,
   calculateFare,
   debounce,
   AddressSuggestion,
 } from "../../../services/addressService";
 import { validateCoupon } from "../../../services/couponService";
 import { mapApi } from "../../../services/apiClient";
-
-// Simple Calendar Component
-const CalendarComponent: React.FC<{
-  selectedDate: Date | null;
-  onDateSelect: (date: Date) => void;
-  minDate: Date;
-}> = ({ selectedDate, onDateSelect, minDate }) => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-  
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
-  
-  const isDateDisabled = (date: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-    return checkDate <= today;
-  };
-  
-  const isDateSelected = (date: Date) => {
-    if (!selectedDate) return false;
-    const selected = new Date(selectedDate);
-    selected.setHours(0, 0, 0, 0);
-    const checkDate = new Date(date);
-    checkDate.setHours(0, 0, 0, 0);
-    return selected.getTime() === checkDate.getTime();
-  };
-  
-  const renderCalendar = () => {
-    const daysInMonth = getDaysInMonth(currentMonth);
-    const firstDay = getFirstDayOfMonth(currentMonth);
-    const days: (Date | null)[] = [];
-    
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    
-    // Add all days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-      days.push(date);
-    }
-    
-    const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    
-    return (
-      <View style={styles.calendar}>
-        {/* Month Navigation */}
-        <View style={styles.calendarHeader}>
-          <TouchableOpacity
-            onPress={() => {
-              const prevMonth = new Date(currentMonth);
-              prevMonth.setMonth(prevMonth.getMonth() - 1);
-              setCurrentMonth(prevMonth);
-            }}
-          >
-            <Feather name="chevron-left" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.calendarMonthText}>
-            {currentMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
-          </Text>
-          <TouchableOpacity
-            onPress={() => {
-              const nextMonth = new Date(currentMonth);
-              nextMonth.setMonth(nextMonth.getMonth() + 1);
-              setCurrentMonth(nextMonth);
-            }}
-          >
-            <Feather name="chevron-right" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
-        
-        {/* Week Days Header */}
-        <View style={styles.weekDaysContainer}>
-          {weekDays.map((day) => (
-            <View key={day} style={styles.weekDay}>
-              <Text style={styles.weekDayText}>{day}</Text>
-            </View>
-          ))}
-        </View>
-        
-        {/* Calendar Grid */}
-        <View style={styles.calendarGrid}>
-          {days.map((date, index) => {
-            if (date === null) {
-              return <View key={index} style={styles.calendarDay} />;
-            }
-            
-            const disabled = isDateDisabled(date);
-            const selected = isDateSelected(date);
-            
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.calendarDay,
-                  selected && styles.calendarDaySelected,
-                  disabled && styles.calendarDayDisabled,
-                ]}
-                onPress={() => {
-                  if (!disabled) {
-                    onDateSelect(date);
-                  }
-                }}
-                disabled={disabled}
-              >
-                <Text
-                  style={[
-                    styles.calendarDayText,
-                    selected && styles.calendarDayTextSelected,
-                    disabled && styles.calendarDayTextDisabled,
-                  ]}
-                >
-                  {date.getDate()}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
-    );
-  };
-  
-  return renderCalendar();
-};
 
 export default function NewBookingScreen() {
   const router = useRouter();
@@ -246,11 +113,6 @@ export default function NewBookingScreen() {
   // Payment method state
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
 
-  // Delivery type state
-  const [deliveryType, setDeliveryType] = useState<"sameDay" | "later">("sameDay");
-  const [deliveryDate, setDeliveryDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
   // Parcel type dropdown state
   const [showParcelTypeModal, setShowParcelTypeModal] = useState(false);
   const parcelTypes = ["Document", "Package", "Electronics", "Fragile", "Other"];
@@ -266,7 +128,7 @@ export default function NewBookingScreen() {
   const [cities, setCities] = useState<Array<{ id: string; name: string; state?: string }>>(defaultCities);
   const [loadingCities, setLoadingCities] = useState(false);
 
-  // Debounced search function for pickup address
+  // Debounced search function for pickup address (600ms to reduce API calls while typing)
   const debouncedPickupSearch = useCallback(
     debounce(async (query: string) => {
       if (query.trim().length < 3) {
@@ -285,11 +147,11 @@ export default function NewBookingScreen() {
       } finally {
         setLoadingSuggestions(false);
       }
-    }, 500),
+    }, 600),
     []
   );
 
-  // Debounced search function for drop address
+  // Debounced search function for drop address (600ms to reduce API calls while typing)
   const debouncedDropSearch = useCallback(
     debounce(async (query: string) => {
       if (query.trim().length < 3) {
@@ -308,51 +170,53 @@ export default function NewBookingScreen() {
       } finally {
         setLoadingSuggestions(false);
       }
-    }, 500),
+    }, 600),
     []
   );
 
-  // Handle pickup address input change
+  // Local state for address input to avoid heavy parent re-renders on every keystroke
+  const [pickupAddressInput, setPickupAddressInput] = useState("");
+  const [dropAddressInput, setDropAddressInput] = useState("");
+
+  // Handle pickup address input change - only update local state while typing (≥3 chars)
   const handlePickupAddressChange = (text: string) => {
+    setPickupAddressInput(text);
     setPickupSearchQuery(text);
-    // Update address state directly - always allow typing
-    setPickup((prev) => ({ ...prev, address: text }));
-    // Reset selected flag if user is typing manually
-    if (pickupAddressSelected) {
-      setPickupAddressSelected(false);
-    }
-    // Hide suggestions if text is cleared
+    if (pickupAddressSelected) setPickupAddressSelected(false);
     if (text.trim().length === 0) {
       setShowPickupSuggestions(false);
+      setPickup((prev) => ({ ...prev, address: text }));
     } else if (text.trim().length >= 3) {
-      // Only show suggestions if user types 3+ characters
       debouncedPickupSearch(text);
     } else {
-      // Hide suggestions if less than 3 characters
       setShowPickupSuggestions(false);
+      setPickup((prev) => ({ ...prev, address: text }));
     }
   };
 
-  // Handle drop address input change
+  // Handle drop address input change - only update local state while typing
   const handleDropAddressChange = (text: string) => {
+    setDropAddressInput(text);
     setDropSearchQuery(text);
-    // Update address state directly - always allow typing
-    setDrop((prev) => ({ ...prev, address: text }));
-    // Reset selected flag if user is typing manually
-    if (dropAddressSelected) {
-      setDropAddressSelected(false);
-    }
-    // Hide suggestions if text is cleared
+    if (dropAddressSelected) setDropAddressSelected(false);
     if (text.trim().length === 0) {
       setShowDropSuggestions(false);
+      setDrop((prev) => ({ ...prev, address: text }));
     } else if (text.trim().length >= 3) {
-      // Only show suggestions if user types 3+ characters
       debouncedDropSearch(text);
     } else {
-      // Hide suggestions if less than 3 characters
       setShowDropSuggestions(false);
+      setDrop((prev) => ({ ...prev, address: text }));
     }
   };
+
+  const handlePickupAddressBlur = useCallback(() => {
+    setPickup((prev) => ({ ...prev, address: pickupAddressInput }));
+  }, [pickupAddressInput]);
+
+  const handleDropAddressBlur = useCallback(() => {
+    setDrop((prev) => ({ ...prev, address: dropAddressInput }));
+  }, [dropAddressInput]);
 
   // Dismiss pickup suggestions
   const dismissPickupSuggestions = () => {
@@ -367,58 +231,44 @@ export default function NewBookingScreen() {
   // Handle pickup suggestion selection
   const handlePickupSuggestionSelect = async (suggestion: AddressSuggestion) => {
     try {
-      setLoadingSuggestions(true);
-      setShowPickupSuggestions(false); // Hide suggestions immediately
-      
-      // Fill address fields from suggestion
+      setShowPickupSuggestions(false);
+      setPickupAddressInput(suggestion.displayName);
+      setPickupSearchQuery("");
       setPickup((prev) => ({
         ...prev,
         address: suggestion.displayName,
         city: suggestion.address?.city || "Ratlam",
         state: suggestion.address?.state || "MP",
         pincode: suggestion.address?.postcode || prev.pincode,
-        // Don't auto-fill houseNumber with name
         houseNumber: prev.houseNumber || "",
       }));
-
-      // Store coordinates for fare calculation
       setPickupCoordinates(suggestion.coordinates);
-      setPickupAddressSelected(true); // Mark as selected
-      setPickupSearchQuery("");
+      setPickupAddressSelected(true);
     } catch (error: any) {
       console.error("[Pickup] Error selecting suggestion:", error);
       Alert.alert("Error", error.message || "Failed to select address");
-    } finally {
-      setLoadingSuggestions(false);
     }
   };
 
   // Handle drop suggestion selection
   const handleDropSuggestionSelect = async (suggestion: AddressSuggestion) => {
     try {
-      setLoadingSuggestions(true);
-      setShowDropSuggestions(false); // Hide suggestions immediately
-      
-      // Fill address fields from suggestion
+      setShowDropSuggestions(false);
+      setDropAddressInput(suggestion.displayName);
+      setDropSearchQuery("");
       setDrop((prev) => ({
         ...prev,
         address: suggestion.displayName,
         city: suggestion.address?.city || "Ratlam",
         state: suggestion.address?.state || "MP",
         pincode: suggestion.address?.postcode || prev.pincode,
-        // Don't auto-fill houseNumber with name
         houseNumber: prev.houseNumber || "",
       }));
-
-      // Store coordinates for fare calculation
       setDropCoordinates(suggestion.coordinates);
-      setDropAddressSelected(true); // Mark as selected
-      setDropSearchQuery("");
+      setDropAddressSelected(true);
     } catch (error: any) {
       console.error("[Drop] Error selecting suggestion:", error);
       Alert.alert("Error", error.message || "Failed to select address");
-    } finally {
-      setLoadingSuggestions(false);
     }
   };
 
@@ -447,8 +297,6 @@ export default function NewBookingScreen() {
       
       setLoadingFare(true);
       try {
-        // Use coordinates if available, otherwise use default coordinates
-        // The backend will use cities and pincodes for accurate calculation
         const fare = await calculateFare(
           pickupCoordinates || defaultCoords,
           dropCoordinates || defaultCoords,
@@ -457,7 +305,8 @@ export default function NewBookingScreen() {
           hasDropPincode ? drop.pincode : undefined,
           couponCode.trim() || undefined,
           pickup.city,
-          drop.city
+          drop.city,
+          parcelDetails.type
         );
         
         setFareCalculation(fare);
@@ -471,7 +320,7 @@ export default function NewBookingScreen() {
     };
 
     calculateFareAsync();
-  }, [pickupCoordinates, dropCoordinates, parcelDetails.weight, pickup.pincode, drop.pincode, couponCode, pickup.city, drop.city]);
+  }, [pickupCoordinates, dropCoordinates, parcelDetails.weight, parcelDetails.type, pickup.pincode, drop.pincode, couponCode, pickup.city, drop.city]);
 
   // Load cities function
   const loadCities = useCallback(async () => {
@@ -548,15 +397,17 @@ export default function NewBookingScreen() {
   };
 
   const handleSubmit = async () => {
-    // Validate addresses - allow both selected suggestions and custom addresses
-    // If pincode is available, we can calculate fare by pincode
-    const pickupValidation = validateAddress(pickup);
+    // Use current address input (in case user didn't blur)
+    const pickupWithAddress = { ...pickup, address: pickupAddressInput || pickup.address };
+    const dropWithAddress = { ...drop, address: dropAddressInput || drop.address };
+
+    const pickupValidation = validateAddress(pickupWithAddress);
     if (!pickupValidation.isValid) {
       Alert.alert("Validation Error", pickupValidation.errors.join("\n"));
       return;
     }
 
-    const dropValidation = validateAddress(drop);
+    const dropValidation = validateAddress(dropWithAddress);
     if (!dropValidation.isValid) {
       Alert.alert("Validation Error", dropValidation.errors.join("\n"));
       return;
@@ -579,24 +430,16 @@ export default function NewBookingScreen() {
       return;
     }
 
-    // Validate delivery date if scheduled later
-    if (deliveryType === "later" && !deliveryDate) {
-      Alert.alert("Validation Error", "Please select a delivery date");
-      return;
-    }
-
     try {
       if (paymentMethod === "cod") {
-        // Cash on Delivery - create booking immediately
         const booking = await createBooking({
-          pickup,
-          drop,
+          pickup: pickupWithAddress,
+          drop: dropWithAddress,
           parcelDetails,
           fare: fareCalculation.finalFare || fareCalculation.totalFare,
           paymentMethod,
           couponCode: fareCalculation.couponApplied?.code || undefined,
-          deliveryType,
-          deliveryDate: deliveryType === "later" && deliveryDate ? deliveryDate.toISOString() : undefined,
+          deliveryType: "sameDay",
         });
 
         Alert.alert("Success", "Booking created successfully! Pay on delivery.", [
@@ -607,15 +450,13 @@ export default function NewBookingScreen() {
         ]);
       } else {
         // Online payment - don't create booking yet, pass data to payment screen
-        // Booking will be created only after payment is successful
         const bookingData = {
-          pickup,
-          drop,
+          pickup: pickupWithAddress,
+          drop: dropWithAddress,
           parcelDetails,
           fare: fareCalculation.finalFare || fareCalculation.totalFare,
           couponCode: fareCalculation.couponApplied?.code || undefined,
-          deliveryType,
-          deliveryDate: deliveryType === "later" && deliveryDate ? deliveryDate.toISOString() : undefined,
+          deliveryType: "sameDay",
         };
 
         // Navigate to payment screen with booking data
@@ -660,8 +501,9 @@ export default function NewBookingScreen() {
               <View style={styles.autocompleteContainer}>
                 <Input
                   label="Address (Type to search or enter custom address)"
-                  value={pickup.address}
+                  value={pickupAddressInput}
                   onChangeText={handlePickupAddressChange}
+                  onBlur={handlePickupAddressBlur}
                   placeholder="Type address to search or enter manually..."
                   multiline
                   numberOfLines={2}
@@ -848,8 +690,9 @@ export default function NewBookingScreen() {
               <View style={styles.autocompleteContainer}>
                 <Input
                   label="Address (Type to search or enter custom address)"
-                  value={drop.address}
+                  value={dropAddressInput}
                   onChangeText={handleDropAddressChange}
+                  onBlur={handleDropAddressBlur}
                   placeholder="Type address to search or enter manually..."
                   multiline
                   numberOfLines={2}
@@ -1222,7 +1065,10 @@ export default function NewBookingScreen() {
                             parcelDetails.weight,
                             pickup.pincode,
                             drop.pincode,
-                            couponCode.trim()
+                            couponCode.trim(),
+                            pickup.city,
+                            drop.city,
+                            parcelDetails.type
                           );
                         } else if (pickupCoordinates && dropCoordinates) {
                           fare = await calculateFare(
@@ -1231,7 +1077,10 @@ export default function NewBookingScreen() {
                             parcelDetails.weight,
                             pickup.pincode || undefined,
                             drop.pincode || undefined,
-                            couponCode.trim()
+                            couponCode.trim(),
+                            pickup.city,
+                            drop.city,
+                            parcelDetails.type
                           );
                         } else {
                           setCouponError("Please complete address details first");
@@ -1243,13 +1092,16 @@ export default function NewBookingScreen() {
                           setCouponError(null);
                         } else {
                           setCouponError("Invalid or expired coupon code");
-                          // Reset fare calculation to original
                           const originalFare = await calculateFare(
                             pickupCoordinates || { lat: 23.3308, lon: 75.0403 },
                             dropCoordinates || { lat: 23.3308, lon: 75.0403 },
                             parcelDetails.weight,
                             pickup.pincode,
-                            drop.pincode
+                            drop.pincode,
+                            undefined,
+                            pickup.city,
+                            drop.city,
+                            parcelDetails.type
                           );
                           setFareCalculation(originalFare);
                         }
@@ -1287,7 +1139,8 @@ export default function NewBookingScreen() {
                             drop.pincode,
                             undefined,
                             pickup.city,
-                            drop.city
+                            drop.city,
+                            parcelDetails.type
                           );
                         } else if (pickupCoordinates && dropCoordinates) {
                           fare = await calculateFare(
@@ -1298,7 +1151,8 @@ export default function NewBookingScreen() {
                             drop.pincode || undefined,
                             undefined,
                             pickup.city,
-                            drop.city
+                            drop.city,
+                            parcelDetails.type
                           );
                         }
                         if (fare) {
@@ -1310,121 +1164,6 @@ export default function NewBookingScreen() {
                     </TouchableOpacity>
                   )}
                 </View>
-              </Card>
-            )}
-
-            {/* Delivery Date Selection */}
-            {fareCalculation && (
-              <Card>
-                <Text style={styles.sectionTitle}>Delivery Option</Text>
-                <View style={styles.deliveryOptionContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.deliveryOption,
-                      deliveryType === "sameDay" && styles.deliveryOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setDeliveryType("sameDay");
-                      setDeliveryDate(null);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.deliveryOptionText,
-                        deliveryType === "sameDay" && styles.deliveryOptionTextSelected,
-                      ]}
-                    >
-                      Same Day Delivery
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.deliveryOption,
-                      deliveryType === "later" && styles.deliveryOptionSelected,
-                    ]}
-                    onPress={() => setDeliveryType("later")}
-                  >
-                    <Text
-                      style={[
-                        styles.deliveryOptionText,
-                        deliveryType === "later" && styles.deliveryOptionTextSelected,
-                      ]}
-                    >
-                      Schedule Later
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                {deliveryType === "later" && (
-                  <View style={styles.datePickerContainer}>
-                    <Text style={styles.label}>Select Delivery Date</Text>
-                    <TouchableOpacity
-                      style={styles.datePickerButton}
-                      onPress={() => setShowDatePicker(true)}
-                    >
-                      <Text style={styles.datePickerText}>
-                        {deliveryDate
-                          ? new Date(deliveryDate).toLocaleDateString("en-IN", {
-                              day: "2-digit",
-                              month: "short",
-                              year: "numeric",
-                            })
-                          : "Select date"}
-                      </Text>
-                      <Feather name="calendar" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  </View>
-                )}
-                {showDatePicker && (
-                  <Modal
-                    visible={showDatePicker}
-                    transparent
-                    animationType="slide"
-                    onRequestClose={() => setShowDatePicker(false)}
-                  >
-                    <Pressable
-                      style={styles.modalOverlay}
-                      onPress={() => setShowDatePicker(false)}
-                    >
-                      <Pressable onPress={(e) => e.stopPropagation()}>
-                        <View style={styles.modalContent}>
-                          <Text style={styles.modalTitle}>Select Delivery Date</Text>
-                          <View style={styles.calendarContainer}>
-                            <CalendarComponent
-                              selectedDate={deliveryDate}
-                              onDateSelect={(date) => setDeliveryDate(date)}
-                              minDate={new Date(Date.now() + 24 * 60 * 60 * 1000)} // Tomorrow
-                            />
-                          </View>
-                          <View style={styles.modalButtons}>
-                            <TouchableOpacity
-                              style={[styles.modalButton, styles.modalButtonCancel]}
-                              onPress={() => {
-                                setShowDatePicker(false);
-                              }}
-                            >
-                              <Text style={styles.modalButtonText}>Cancel</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.modalButton, styles.modalButtonConfirm]}
-                              onPress={() => {
-                                if (!deliveryDate) {
-                                  const tomorrow = new Date();
-                                  tomorrow.setDate(tomorrow.getDate() + 1);
-                                  setDeliveryDate(tomorrow);
-                                }
-                                setShowDatePicker(false);
-                              }}
-                            >
-                              <Text style={[styles.modalButtonText, { color: colors.primary }]}>
-                                Confirm
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      </Pressable>
-                    </Pressable>
-                  </Modal>
-                )}
               </Card>
             )}
 
