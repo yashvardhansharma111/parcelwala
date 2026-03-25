@@ -29,7 +29,7 @@ export const sendOtp = async (
   next: NextFunction
 ) => {
   try {
-    const { phoneNumber } = req.body;
+    const { phoneNumber, name } = req.body;
 
     // Validate phone number
     if (!phoneNumber || typeof phoneNumber !== "string") {
@@ -58,12 +58,27 @@ export const sendOtp = async (
     // Check if user exists with this phone number
     const existingUser = await getUserByPhoneNumber(phoneNumber);
     
-    // Send OTP for all users (both existing and new)
-    // This allows signup flow to work properly
-    await sendOTP(phoneNumber);
+    // Check if this is a signup request (name is provided)
+    const isSignupRequest = name && typeof name === "string" && name.trim().length > 0;
+    
+    // If user doesn't exist AND this is NOT a signup request (login attempt)
+    // Don't send OTP, return requiresSignup flag to route to signup
+    if (!existingUser && !isSignupRequest) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          requiresSignup: true,
+        },
+        message: "Account not found. Please sign up to create an account.",
+      });
+    }
 
-    // Always return success with empty data to allow OTP input to show
-    // The requiresSignup check will happen during OTP verification
+    // Send OTP for:
+    // 1. Existing users (login)
+    // 2. New users with name (signup)
+    await sendOTP(phoneNumber);
+    
+    // Return success - OTP sent successfully
     res.status(200).json({
       success: true,
       data: {},

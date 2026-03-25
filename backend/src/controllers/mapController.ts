@@ -77,17 +77,55 @@ export const getDetails = async (
  * Calculate fare based on pickup/drop locations and weight
  * POST /map/fare
  */
+const DOCUMENT_FLAT_FARE = 30;
+
 export const calculateBookingFare = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { pickup, drop, weight, pickupPincode, dropPincode, pickupCity, dropCity } = req.body;
+    const { pickup, drop, weight, pickupPincode, dropPincode, pickupCity, dropCity, parcelType } = req.body;
 
-    // Validate weight
+    // Validate weight (Document type can use any weight for flat fare)
     if (typeof weight !== "number" || weight <= 0) {
       throw createError("Weight must be a positive number", 400);
+    }
+
+    // Document parcel type: flat ₹30 fare (no GST)
+    if (parcelType === "Document") {
+      let finalFare = DOCUMENT_FLAT_FARE;
+      let discountAmount = 0;
+      let couponApplied = undefined;
+      if (req.body.couponCode) {
+        const { validateCoupon } = await import("../services/couponService.js");
+        try {
+          const couponResult = await validateCoupon(req.body.couponCode, DOCUMENT_FLAT_FARE);
+          if (couponResult.isValid && couponResult.coupon) {
+            discountAmount = couponResult.discountAmount;
+            finalFare = Math.max(0, DOCUMENT_FLAT_FARE - discountAmount);
+            couponApplied = {
+              code: couponResult.coupon.code,
+              discountAmount: discountAmount,
+            };
+          }
+        } catch (error) {
+          console.error("Coupon validation error:", error);
+        }
+      }
+      res.json({
+        success: true,
+        data: {
+          distanceInKm: 0,
+          baseFare: DOCUMENT_FLAT_FARE,
+          gst: 0,
+          totalFare: DOCUMENT_FLAT_FARE,
+          finalFare,
+          discountAmount,
+          couponApplied,
+        },
+      });
+      return;
     }
 
     // Check if cities are provided and try to get city route pricing
