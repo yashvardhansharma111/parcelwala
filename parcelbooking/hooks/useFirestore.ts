@@ -39,15 +39,15 @@ export const useFirestoreCollection = <T>(
 
       const unsubscribe = onSnapshot(
         q,
-        (snapshot) => {
-          const items = snapshot.docs.map((doc) => ({
+        (snapshot: import("firebase/firestore").QuerySnapshot) => {
+          const items = snapshot.docs.map((doc: import("firebase/firestore").QueryDocumentSnapshot) => ({
             id: doc.id,
             ...doc.data(),
           })) as T[];
           setData(items);
           setLoading(false);
         },
-        (err) => {
+        (err: Error) => {
           setError(err);
           setLoading(false);
         }

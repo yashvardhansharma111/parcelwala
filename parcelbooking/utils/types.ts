@@ -2,9 +2,9 @@
  * TypeScript Interfaces and Types
  */
 
-export type UserRole = "admin" | "customer";
+export type UserRole = "admin" | "customer" | "rider";
 
-export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned" | "Cancelled";
+export type BookingStatus = "PendingPayment" | "Created" | "Picked" | "Shipped" | "Delivered" | "Returned" | "Cancelled" | "DeliveryFailed" | "ReturnInProgress";
 
 export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
 
@@ -27,6 +27,8 @@ export interface Address {
   state: string;
   pincode: string;
   landmark?: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface ParcelDetails {
@@ -44,6 +46,8 @@ export interface ParcelDetails {
 export type PaymentMethod = "cod" | "online"; // Cash on Delivery or Online Payment
 
 export type DeliveryType = "sameDay" | "later";
+
+export type AssignmentStatus = "unassigned" | "offered" | "assigned" | "completed" | "no_rider";
 
 export interface Booking {
   id: string;
@@ -63,6 +67,18 @@ export interface Booking {
   createdAt: Date;
   updatedAt: Date;
   trackingNumber?: string;
+  riderId?: string;
+  riderName?: string;
+  riderPhone?: string;
+  riderPhase?: string;
+  assignmentStatus?: AssignmentStatus;
+  offeredTo?: string[];
+  assignedAt?: Date | string;
+  codCollected?: boolean;
+  codCollectedAt?: Date | string;
+  codCollectedBy?: string;
+  returnReason?: string;
+  returnedAt?: Date | string;
 }
 
 export interface PaymentIntent {

@@ -22,7 +22,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 }) => {
   const statusColors =
     type === "booking" ? STATUS_COLORS : PAYMENT_STATUS_COLORS;
-  const statusColor = statusColors[status] || colors.textLight;
+  const statusColor = (statusColors as Record<string, string>)[status] || colors.textLight;
+
+  const label =
+    type === "booking" && status === "Shipped"
+      ? "In transit"
+      : status.charAt(0).toUpperCase() + status.slice(1);
 
   return (
     <View
@@ -32,9 +37,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         style,
       ]}
     >
-      <Text style={[styles.text, { color: statusColor }]}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </Text>
+      <Text style={[styles.text, { color: statusColor }]}>{label}</Text>
     </View>
   );
 };

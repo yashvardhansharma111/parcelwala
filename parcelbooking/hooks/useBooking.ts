@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useBookingStore } from "../store/bookingStore";
 import * as bookingService from "../services/bookingService";
-import { Booking, BookingStatus, Address, ParcelDetails } from "../utils/types";
+import { Booking, BookingStatus, Address, ParcelDetails, PaymentMethod } from "../utils/types";
 
 export const useBooking = () => {
   const { user } = useAuthStore();
@@ -52,17 +52,10 @@ export const useBooking = () => {
         lastDocId?: string;
       };
 
-      if (user.role === "admin") {
-        result = await bookingService.getAllBookings(undefined, {
-          limit: options?.limit || 20,
-          lastDocId: options?.lastDocId,
-        });
-      } else {
-        result = await bookingService.getUserBookings({
-          limit: options?.limit || 20,
-          lastDocId: options?.lastDocId,
-        });
-      }
+      result = await bookingService.getUserBookings({
+        limit: options?.limit || 20,
+        lastDocId: options?.lastDocId,
+      });
 
       if (options?.append) {
         // Append to existing bookings
@@ -76,7 +69,6 @@ export const useBooking = () => {
       setPagination(result.hasMore, result.lastDocId);
     } catch (error: any) {
       setError(error.message || "Failed to fetch bookings");
-      console.error("Error fetching bookings:", error);
     } finally {
       setLoading(false);
     }
@@ -114,11 +106,19 @@ export const useBooking = () => {
       setError(null);
       setLoading(true);
 
-      const bookingData: Omit<Booking, "id" | "userId" | "createdAt" | "updatedAt" | "trackingNumber" | "status" | "paymentStatus"> = {
+      const bookingData: Omit<Booking, "id" | "userId" | "createdAt" | "updatedAt" | "trackingNumber" | "status" | "paymentStatus"> & {
+        couponCode?: string;
+        deliveryType?: "sameDay" | "later";
+        deliveryDate?: string;
+      } = {
         pickup: data.pickup,
         drop: data.drop,
         parcelDetails: data.parcelDetails,
         fare: data.fare,
+        paymentMethod: data.paymentMethod,
+        couponCode: data.couponCode,
+        deliveryType: data.deliveryType,
+        deliveryDate: data.deliveryDate,
       };
 
       const booking = await bookingService.createBooking(bookingData);
@@ -207,23 +207,15 @@ export const useBooking = () => {
         lastDocId?: string;
       };
 
-      if (user.role === "admin") {
-        result = await bookingService.getAllBookings(undefined, {
-          limit: 20,
-          lastDocId,
-        });
-      } else {
-        result = await bookingService.getUserBookings({
-          limit: 20,
-          lastDocId,
-        });
-      }
+      result = await bookingService.getUserBookings({
+        limit: 20,
+        lastDocId,
+      });
 
       appendBookings(result.bookings);
       setPagination(result.hasMore, result.lastDocId);
     } catch (error: any) {
       setError(error.message || "Failed to load more bookings");
-      console.error("Error loading more bookings:", error);
     } finally {
       setLoadingMore(false);
     }

@@ -13,6 +13,7 @@ import {
 } from "./tokenStorage";
 import { User } from "../utils/types";
 import { sanitizeErrorMessage } from "../utils/formatters";
+import { useAuthStore } from "../store/authStore";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -61,34 +62,32 @@ export const apiRequest = async <T = any>(
 
     // Handle 401 - Token expired, try to refresh
     if (response.status === 401 && accessToken) {
-      try {
-        const newAccessToken = await refreshAccessToken();
-        if (newAccessToken) {
-          // Retry request with new token
-          const retryHeaders: Record<string, string> = {
-            ...headers,
-            Authorization: `Bearer ${newAccessToken}`,
-          };
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers: retryHeaders,
-          });
+      const newAccessToken = await refreshAccessToken().catch(() => null);
 
-          if (!retryResponse.ok) {
-            throw new Error(`Request failed: ${retryResponse.status}`);
-          }
+      if (newAccessToken) {
+        // Retry request with new token
+        const retryHeaders: Record<string, string> = {
+          ...headers,
+          Authorization: `Bearer ${newAccessToken}`,
+        };
+        const retryResponse = await fetch(url, {
+          ...options,
+          headers: retryHeaders,
+        });
 
+        if (retryResponse.ok) {
           const retryData = await retryResponse.json() as ApiResponse<T>;
           if (!retryData.success) {
             throw new Error(retryData.error?.message || "Request failed");
           }
           return retryData.data as T;
         }
-      } catch (refreshError) {
-        // Refresh failed, clear tokens and throw error
-        await clearTokens();
-        throw new Error("Session expired. Please login again.");
       }
+
+      // Refresh missing, failed, or retry still 401 — force logout
+      await clearTokens();
+      useAuthStore.getState().logout();
+      throw new Error("Session expired. Please login again.");
     }
 
     if (!response.ok) {
@@ -183,7 +182,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
     return null;
   } catch (error) {
-    console.error("Error refreshing token:", error);
+    if (__DEV__) console.error("Error refreshing token:", error);
     return null;
   }
 };
@@ -271,8 +270,7 @@ export const registerPushToken = async (token: string): Promise<void> => {
       body: JSON.stringify({ token }),
     });
   } catch (error: any) {
-    console.error("Error registering FCM token:", error);
-    // Don't throw - push notifications are not critical
+    if (__DEV__) console.error("Error registering FCM token:", error);
   }
 };
 
@@ -284,116 +282,23 @@ export const userApi = {
    * Get user profile
    */
   getProfile: async (): Promise<User> => {
-    return await apiRequest<User>("/user/profile", {
+    const response = await apiRequest<{ user: User }>("/user/profile", {
       method: "GET",
     });
+    return response.user;
   },
   /**
    * Update user profile
    */
   updateProfile: async (updates: { name?: string }): Promise<User> => {
-    return await apiRequest<User>("/user/profile", {
+    const response = await apiRequest<{ user: User }>("/user/profile", {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(updates),
     });
-  },
-};
-
-/**
- * Admin API
- */
-export const adminApi = {
-  /**
-   * Get admin dashboard data
-   */
-  getDashboard: async (): Promise<any> => {
-    return await apiRequest("/admin/dashboard", {
-      method: "GET",
-    });
-  },
-
-  /**
-   * Broadcast notification to all users (Super admin only)
-   */
-  broadcastNotification: async (title: string, body: string, data?: any): Promise<{
-    sent: number;
-    failed: number;
-    total: number;
-  }> => {
-    return await apiRequest("/admin/notifications/broadcast", {
-      method: "POST",
-      body: JSON.stringify({ title, body, data }),
-    });
-  },
-
-  /**
-   * Send notification to specific user (Super admin only)
-   */
-  sendNotificationToUser: async (userId: string, title: string, body: string, data?: any): Promise<void> => {
-    return await apiRequest("/admin/notifications/send", {
-      method: "POST",
-      body: JSON.stringify({ userId, title, body, data }),
-    });
-  },
-
-  /**
-   * Get all co-admins (Super admin only)
-   */
-  getCoAdmins: async (): Promise<Array<{
-    id: string;
-    phoneNumber: string;
-    name: string;
-    role: "admin";
-    createdAt: string;
-  }>> => {
-    const response = await apiRequest<{ coAdmins: Array<{
-      id: string;
-      phoneNumber: string;
-      name: string;
-      role: "admin";
-      createdAt: string;
-    }> }>("/admin/co-admins", {
-      method: "GET",
-    });
-    // Backend returns { success: true, data: { coAdmins: [...] } }
-    // apiRequest extracts data, so response is { coAdmins: [...] }
-    // Extract the coAdmins array
-    if (response && typeof response === 'object' && 'coAdmins' in response) {
-      return Array.isArray(response.coAdmins) ? response.coAdmins : [];
-    }
-    // If response is directly an array (fallback)
-    if (Array.isArray(response)) {
-      return response;
-    }
-    console.warn("Unexpected co-admins response structure:", response);
-    return [];
-  },
-
-  /**
-   * Appoint a co-admin (Super admin only)
-   */
-  appointCoAdmin: async (phoneNumber: string, name: string): Promise<{
-    id: string;
-    phoneNumber: string;
-    name: string;
-    role: "admin";
-  }> => {
-    return await apiRequest("/admin/co-admins", {
-      method: "POST",
-      body: JSON.stringify({ phoneNumber, name }),
-    });
-  },
-
-  /**
-   * Remove a co-admin (Super admin only)
-   */
-  removeCoAdmin: async (coAdminId: string): Promise<void> => {
-    return await apiRequest(`/admin/co-admins/${coAdminId}`, {
-      method: "DELETE",
-    });
+    return response.user;
   },
 };
 
@@ -517,12 +422,39 @@ export const couponApi = {
  */
 export const mapApi = {
   /**
+   * Search cities across India (debounced)
+   */
+  searchCities: async (
+    query: string,
+    limit: number = 10
+  ): Promise<{
+    cities: Array<{
+      id: string;
+      name: string;
+      state?: string;
+      country?: string;
+      lat?: number;
+      lon?: number;
+    }>;
+  }> => {
+    return await apiRequest(
+      `/map/cities/autocomplete?q=${encodeURIComponent(query.trim())}&limit=${limit}`,
+      { method: "GET" }
+    );
+  },
+
+  /**
    * Get address autocomplete suggestions
    */
-  autocomplete: async (query: string, limit: number = 5): Promise<{
+  autocomplete: async (
+    query: string,
+    limit: number = 5,
+    city?: string
+  ): Promise<{
     suggestions: Array<{
       displayName: string;
-      coordinates: { lat: number; lon: number };
+      placeId?: string;
+      coordinates?: { lat: number; lon: number };
       address: {
         name: string;
         street?: string;
@@ -531,10 +463,30 @@ export const mapApi = {
         postcode?: string;
         country?: string;
       };
+      source?: string;
     }>;
+    provider?: string;
   }> => {
-    return await apiRequest(`/map/autocomplete?q=${encodeURIComponent(query)}&limit=${limit}`, {
-      method: "GET",
+    const cityParam = city?.trim()
+      ? `&city=${encodeURIComponent(city.trim())}`
+      : "";
+    return await apiRequest(
+      `/map/autocomplete?q=${encodeURIComponent(query)}&limit=${limit}${cityParam}`,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  /**
+   * Resolve Google place_id → lat/lon + address
+   */
+  getPlaceDetails: async (
+    placeId: string
+  ): Promise<{ suggestion: any }> => {
+    return await apiRequest("/map/place-details", {
+      method: "POST",
+      body: JSON.stringify({ placeId }),
     });
   },
 
@@ -561,8 +513,8 @@ export const mapApi = {
   },
 
   /**
-   * Calculate fare based on locations and weight.
-   * parcelType "Document" applies flat ₹30 fare.
+   * Calculate fare based on locations.
+   * Formula: base (≤2km) + ₹8/km after + handling (+ optional waiting).
    */
   calculateFare: async (
     pickup: { lat: number; lon: number },
@@ -577,6 +529,13 @@ export const mapApi = {
   ): Promise<{
     distanceInKm: number;
     baseFare: number;
+    baseKmIncluded?: number;
+    extraKm?: number;
+    perKmRate?: number;
+    perKmCharge?: number;
+    waitingMinutes?: number;
+    waitingCharge?: number;
+    handlingFee?: number;
     gst: number;
     totalFare: number;
     finalFare?: number;
@@ -603,26 +562,6 @@ export const mapApi = {
   },
 
   /**
-   * Get pricing settings (Admin only)
-   */
-  getPricing: async (): Promise<{
-    pricing: {
-      baseRates: Array<{
-        minKm: number;
-        maxKm: number;
-        maxWeight: number;
-        fare: number;
-        applyGst?: boolean;
-      }>;
-      gstPercent: number;
-    };
-  }> => {
-    return await apiRequest("/map/admin/pricing", {
-      method: "GET",
-    });
-  },
-
-  /**
    * Get all cities (Public endpoint - no auth required)
    */
   getCities: async (): Promise<{
@@ -638,122 +577,6 @@ export const mapApi = {
     });
   },
 
-  /**
-   * Create a city (Admin only)
-   */
-  createCity: async (cityData: {
-    name: string;
-    state?: string;
-  }): Promise<{
-    city: {
-      id: string;
-      name: string;
-      state?: string;
-      isActive: boolean;
-    };
-  }> => {
-    return await apiRequest("/admin/cities", {
-      method: "POST",
-      body: JSON.stringify(cityData),
-    });
-  },
-
-  /**
-   * Update a city (Admin only)
-   */
-  updateCity: async (cityId: string, updates: {
-    name?: string;
-    state?: string;
-    isActive?: boolean;
-  }): Promise<any> => {
-    return await apiRequest(`/admin/cities/${cityId}`, {
-      method: "PUT",
-      body: JSON.stringify(updates),
-    });
-  },
-
-  /**
-   * Delete a city (Admin only)
-   */
-  deleteCity: async (cityId: string): Promise<void> => {
-    return await apiRequest(`/admin/cities/${cityId}`, {
-      method: "DELETE",
-    });
-  },
-
-  /**
-   * Get all city routes (Admin only)
-   */
-  getCityRoutes: async (): Promise<{
-    routes: Array<{
-      id: string;
-      fromCity: string;
-      toCity: string;
-      baseFare: number;
-      heavyFare: number;
-      gstPercent: number;
-      isActive: boolean;
-    }>;
-  }> => {
-    return await apiRequest("/admin/cities/routes", {
-      method: "GET",
-    });
-  },
-
-  /**
-   * Create or update city route (Admin only)
-   */
-  upsertCityRoute: async (routeData: {
-    fromCity: string;
-    toCity: string;
-    baseFare: number;
-    heavyFare: number;
-    gstPercent?: number;
-  }): Promise<any> => {
-    return await apiRequest("/admin/cities/routes", {
-      method: "POST",
-      body: JSON.stringify(routeData),
-    });
-  },
-
-  /**
-   * Delete city route (Admin only)
-   */
-  deleteCityRoute: async (routeId: string): Promise<void> => {
-    return await apiRequest(`/admin/cities/routes/${routeId}`, {
-      method: "DELETE",
-    });
-  },
-
-  /**
-   * Update pricing settings (Admin only)
-   */
-  updatePricing: async (pricing: {
-    baseRates?: Array<{
-      minKm: number;
-      maxKm: number;
-      maxWeight: number;
-      fare: number;
-      applyGst?: boolean;
-    }>;
-    gstPercent?: number;
-  }): Promise<{
-    pricing: {
-      baseRates: Array<{
-        minKm: number;
-        maxKm: number;
-        maxWeight: number;
-        fare: number;
-        applyGst?: boolean;
-      }>;
-      gstPercent: number;
-    };
-  }> => {
-    return await apiRequest("/map/admin/pricing", {
-      method: "PUT",
-      body: JSON.stringify(pricing),
-    });
-  },
 };
 
 /**

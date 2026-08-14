@@ -1,6 +1,5 @@
 /**
- * Payment Hook
- * Handles PayGIC payment flow
+ * Payment Hook — PayU flow via backend
  */
 
 import { useState } from "react";
@@ -35,9 +34,13 @@ export const usePayments = () => {
         throw new Error("Booking fare not found");
       }
 
-      // Use pickup address name and email if available, otherwise use provided values
-      const name = customerName || booking?.pickup?.name || bookingData?.pickup?.name || "Customer";
-      const email = customerEmail || `${customerPhone.replace(/\D/g, "")}@parcelapp.com`;
+      const name =
+        customerName ||
+        booking?.pickup?.name ||
+        bookingData?.pickup?.name ||
+        "Customer";
+      const email =
+        customerEmail || `${customerPhone.replace(/\D/g, "")}@parcelapp.com`;
 
       const result = await paymentService.initiatePayment(
         booking?.id || null,
@@ -81,4 +84,3 @@ export const usePayments = () => {
     verifyAndCompletePayment,
   };
 };
-

@@ -1,8 +1,8 @@
 /**
- * Step 1 of 3: Pickup Address
+ * Step 2 of 3: Delivery Address
  */
 
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -12,7 +12,6 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAuthStore } from "../../../store/authStore";
 import { useBookingDraftStore } from "../../../store/bookingDraftStore";
 import { AddressForm } from "../../../components/AddressForm";
 import { Button } from "../../../components/Button";
@@ -21,50 +20,32 @@ import { StepIndicator } from "../../../components/StepIndicator";
 import { colors } from "../../../theme/colors";
 import { validateAddress } from "../../../utils/validators";
 
-export default function PickupAddressScreen() {
+export default function DeliveryAddressScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const pickup = useBookingDraftStore((s) => s.pickup);
-  const pickupCoords = useBookingDraftStore((s) => s.pickupCoords);
-  const setPickup = useBookingDraftStore((s) => s.setPickup);
-
-  // Compute the AddressForm seed once at mount so it includes the user's phone.
-  // Using a ref avoids re-computing on every render and gives AddressForm the
-  // correct phone from its very first render — preventing the stale-phone → setPickup
-  // → pickup.phone-change → resetDraft loop that wiped the typed address.
-  const initialPickup = useRef({
-    ...pickup,
-    phone: pickup.phone || user?.phoneNumber || "",
-  }).current;
-
-  // Seed the store's pickup phone exactly once if it isn't set yet.
-  // Empty deps = single fire; no reactive loop.
-  useEffect(() => {
-    if (!pickup.phone && user?.phoneNumber) {
-      setPickup({ ...pickup, phone: user.phoneNumber }, pickupCoords);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const drop = useBookingDraftStore((s) => s.drop);
+  const dropCoords = useBookingDraftStore((s) => s.dropCoords);
+  const setDrop = useBookingDraftStore((s) => s.setDrop);
 
   const handleNext = () => {
-    const v = validateAddress(pickup);
+    const v = validateAddress(drop);
     if (!v.isValid) {
       Alert.alert("Validation Error", v.errors.join("\n"));
       return;
     }
-    if (!pickupCoords) {
+    if (!dropCoords) {
       Alert.alert(
         "Pin location required",
-        "Select an address suggestion or tap “Use current location” so the rider gets an accurate map pin."
+        "Select an address suggestion or tap “Use current location” so the rider gets an accurate drop pin."
       );
       return;
     }
-    router.push("/(customer)/booking/drop");
+    router.push("/(customer)/booking/parcel");
   };
 
   return (
     <View style={styles.container}>
-      <Header title="Pickup Address (1/3)" showBack />
-      <StepIndicator current={1} total={3} />
+      <Header title="Delivery Address (2/3)" showBack />
+      <StepIndicator current={2} total={3} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardView}
@@ -76,14 +57,14 @@ export default function PickupAddressScreen() {
         >
           <View style={styles.content}>
             <AddressForm
-              sectionTitle="Pickup Address"
-              initial={initialPickup}
-              initialCoords={pickupCoords}
-              onChange={setPickup}
+              sectionTitle="Delivery Address"
+              initial={drop}
+              initialCoords={dropCoords}
+              onChange={setDrop}
               enableCurrentLocation
             />
             <Button
-              title="Next: Delivery Address"
+              title="Next: Parcel & Payment"
               onPress={handleNext}
               style={styles.submitButton}
             />

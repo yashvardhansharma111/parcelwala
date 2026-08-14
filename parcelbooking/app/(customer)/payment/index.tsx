@@ -1,6 +1,6 @@
 /**
  * Payment Screen
- * PayGIC payment initiation
+ * PayU payment initiation
  */
 
 import React, { useEffect, useState, useCallback } from "react";
@@ -12,6 +12,7 @@ import {
   AppState,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter, useLocalSearchParams, usePathname, useFocusEffect } from "expo-router";
 import { Linking } from "react-native";
@@ -66,7 +67,6 @@ export default function PaymentScreen() {
         const parsed = JSON.parse(bookingDataParam);
         setNewBookingData(parsed);
       } catch (error) {
-        console.error("Error parsing booking data:", error);
         Alert.alert("Error", "Invalid booking data");
         router.back();
       }
@@ -233,7 +233,7 @@ export default function PaymentScreen() {
       setTransactionId(txId);
       
       try {
-        // Open payment URL in external browser (PayGIC UPI payment page)
+        // Open payment URL in external browser (PayU payment page)
         const canOpen = await Linking.canOpenURL(paymentUrl);
         
         if (!canOpen) {
@@ -326,8 +326,8 @@ export default function PaymentScreen() {
 
           <Card>
             <Text style={styles.paymentInfo}>
-              You will be redirected to PayGIC payment gateway to complete the
-              payment via UPI.
+              You will be redirected to PayU payment gateway to complete the
+              payment securely.
             </Text>
           </Card>
 

@@ -64,16 +64,14 @@ export default function InvoiceScreen() {
             <View style={styles.companyInfo}>
               <Text style={styles.companyName}>ParcelWalah</Text>
               <Text style={styles.companyAddress}>
-                Your Company Address Here
+                Ratlam
               </Text>
-              <Text style={styles.companyAddress}>
-                City, State - Pincode
-              </Text>
+
               <Text style={styles.companyAddress}>
                 Phone: +91-8462044151
               </Text>
               <Text style={styles.companyAddress}>
-                Email: Help@parcelwalah.in
+                Email: contact@parcelwalah.in
               </Text>
             </View>
             <View style={styles.invoiceTitle}>

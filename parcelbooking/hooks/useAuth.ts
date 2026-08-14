@@ -109,17 +109,11 @@ export const useAuth = () => {
     }
   };
 
-  const redirectBasedOnRole = (userData: User) => {
-    // Use a small delay to ensure router is ready
+  const redirectBasedOnRole = (_userData: User) => {
     setTimeout(() => {
       try {
-        if (userData.role === "admin") {
-          router.replace("/(admin)/dashboard");
-        } else {
-          router.replace("/(customer)/home");
-        }
+        router.replace("/(customer)/(tabs)");
       } catch (error) {
-        // Router might not be ready yet, ignore
         console.warn("Router not ready for navigation:", error);
       }
     }, 100);

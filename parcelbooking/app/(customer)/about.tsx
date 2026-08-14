@@ -47,7 +47,7 @@ export default function AboutScreen() {
               For inquiries, please contact us at:
             </Text>
             <Text style={[styles.paragraph, styles.email]}>
-              Help@parcelwalah.in
+              Contact@parcelwalah.in
             </Text>
           </Card>
 

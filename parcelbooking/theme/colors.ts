@@ -1,12 +1,14 @@
 /**
  * Theme Colors
- * White and Orange theme with neutral grays
+ * White and Orange theme with intercity navy
  */
 
 export const colors = {
   primary: "#FF7A00",
   primaryDark: "#E66A00",
   primaryLight: "#FF9533",
+  intercity: "#1B3A5F",
+  intercityLight: "#2A4F7A",
   background: "#FFFFFF",
   surface: "#F9FAFB",
   text: "#333333",
@@ -31,4 +33,3 @@ export const colors = {
     900: "#111827",
   },
 };
-

@@ -51,7 +51,7 @@ export default function RootLayout() {
           // Notification tapped - handled by navigation
         });
       } catch (error) {
-        console.warn("[Notifications] Failed to set up listeners in _layout:", error);
+        if (__DEV__) console.warn("[Notifications] Failed to set up listeners in _layout:", error);
       }
     };
 
@@ -68,58 +68,73 @@ export default function RootLayout() {
     };
   }, []);
 
-  // Handle deep links function
+  // Handle deep links — empty path parcelbooking:/// goes to index (redirect)
   const handleDeepLink = useCallback((url: string) => {
     try {
       const parsed = Linking.parse(url);
+      const scheme = parsed.scheme || "";
+      const hostname = parsed.hostname || "";
+      const path = parsed.path || "";
+      const pathname = path;
 
-      // Handle parcelbooking://payment/success or parcelbooking://payment/failed
-      // Also handle intent:// URLs from Android
-      const scheme = parsed.scheme || '';
-      const hostname = parsed.hostname || '';
-      const path = parsed.path || '';
-      const pathname = parsed.pathname || '';
-      
-      // Check for parcelbooking:// scheme or intent:// with parcelbooking scheme
-      const isParcelBookingScheme = scheme === 'parcelbooking' || 
-                                    (scheme === 'intent' && parsed.queryParams?.scheme === 'parcelbooking');
-      const isPaymentHost = hostname === 'payment' || pathname?.includes('payment');
-      
+      const isParcelBookingScheme =
+        scheme === "parcelbooking" ||
+        (scheme === "intent" && parsed.queryParams?.scheme === "parcelbooking");
+
+      // Bare open: parcelbooking:/// or parcelbooking:// → let index redirect
+      const emptyPath =
+        (!hostname || hostname === "") &&
+        (!path || path === "/" || path === "") &&
+        (!pathname || pathname === "/" || pathname === "");
+      if (isParcelBookingScheme && emptyPath) {
+        return;
+      }
+
+      const isPaymentHost =
+        hostname === "payment" || pathname?.includes("payment");
+
       if (isParcelBookingScheme && isPaymentHost) {
         const params = parsed.queryParams || {};
-        const fullPath = path || pathname || '';
+        const fullPath = path || pathname || "";
 
-        if (fullPath.includes('success') || pathname?.includes('success')) {
-          // Navigate to payment success screen
+        if (fullPath.includes("success") || pathname?.includes("success")) {
           if (isAuthenticated && user) {
-            // Build query string from params
-            const filteredParams = Object.entries(params)
-              .filter(([key]) => key !== 'scheme' && key !== 'package'); // Filter out intent-specific params
+            const filteredParams = Object.entries(params).filter(
+              ([key]) => key !== "scheme" && key !== "package"
+            );
             const queryString = filteredParams
-              .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
-              .join('&');
-            
-            // Use replace to prevent going back to payment screen
-            // The success screen will show a loading state while processing
-            router.replace(`/(customer)/payment/success?${queryString}` as any);
+              .map(
+                ([key, value]) =>
+                  `${key}=${encodeURIComponent(String(value))}`
+              )
+              .join("&");
+            router.replace(
+              `/(customer)/payment/success?${queryString}` as any
+            );
           }
-        } else if (fullPath.includes('failed') || pathname?.includes('failed')) {
-          // Navigate to payment failed screen
+        } else if (
+          fullPath.includes("failed") ||
+          pathname?.includes("failed")
+        ) {
           if (isAuthenticated && user) {
-            const filteredParams = Object.entries(params)
-              .filter(([key]) => key !== 'scheme' && key !== 'package');
+            const filteredParams = Object.entries(params).filter(
+              ([key]) => key !== "scheme" && key !== "package"
+            );
             const queryString = filteredParams
-              .map(([key, value]) => `${key}=${encodeURIComponent(String(value))}`)
-              .join('&');
-            
-            // Navigate to booking history with payment failed flag
-            router.push(`/(customer)/booking/history?paymentFailed=true&${queryString}` as any);
+              .map(
+                ([key, value]) =>
+                  `${key}=${encodeURIComponent(String(value))}`
+              )
+              .join("&");
+            router.push(
+              `/(customer)/booking/history?paymentFailed=true&${queryString}` as any
+            );
           }
         }
       }
     } catch (error) {
       if (__DEV__) {
-        console.error('[DeepLink] Error handling deep link:', error);
+        console.error("[DeepLink] Error handling deep link:", error);
       }
     }
   }, [isAuthenticated, user, router]);
@@ -175,44 +190,21 @@ export default function RootLayout() {
     const currentSegment = segments[0];
     const inAuthGroup = currentSegment === 'login';
     const inCustomerGroup = currentSegment === '(customer)';
-    const inAdminGroup = currentSegment === '(admin)';
 
-    // Prevent navigation loops by checking current pathname
     if (!isAuthenticated && !inAuthGroup && pathname !== '/login' && !pathname.startsWith('/login')) {
-      // Redirect to login if not authenticated
       try {
         router.replace('/login' as any);
-      } catch (error) {
-        // Router might not be ready yet, ignore
-      }
+      } catch {}
     } else if (isAuthenticated && user) {
       if (inAuthGroup) {
-        // Redirect based on user role
         try {
-          if (user.role === 'admin') {
-            router.replace('/(admin)/dashboard');
-          } else {
-            router.replace('/(customer)/home');
-          }
-        } catch (error) {
-          // Router might not be ready yet, ignore
-        }
-      } else if (user.role === 'admin' && !inAdminGroup && !inAuthGroup) {
-        // Admin trying to access customer routes
-        try {
-          router.replace('/(admin)/dashboard');
-        } catch (error) {
-          // Router might not be ready yet, ignore
-        }
-      } else if (user.role === 'customer' && !inCustomerGroup && !inAuthGroup) {
-        // Customer trying to access admin routes
-        // BUT: Don't redirect if user is on payment success screen
+          router.replace('/(customer)/(tabs)');
+        } catch {}
+      } else if (!inCustomerGroup && !inAuthGroup) {
         if (!pathname?.includes('payment/success') && !pathname?.includes('payment/')) {
-        try {
-          router.replace('/(customer)/home');
-        } catch (error) {
-          // Router might not be ready yet, ignore
-          }
+          try {
+            router.replace('/(customer)/(tabs)');
+          } catch {}
         }
       }
     }
@@ -230,9 +222,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <Stack>
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="login/index" options={{ headerShown: false }} />
         <Stack.Screen name="(customer)" options={{ headerShown: false }} />
-        <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </SafeAreaProvider>

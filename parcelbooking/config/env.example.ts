@@ -25,8 +25,8 @@ export const ENV_EXAMPLE = {
   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789",
   EXPO_PUBLIC_FIREBASE_APP_ID: "1:123456789:web:abcdef",
 
-  // PayGIC Configuration
-  EXPO_PUBLIC_PAYGIC_KEY: "your-paygic-api-key",
-  EXPO_PUBLIC_PAYGIC_SECRET: "your-paygic-secret",
+  // PayU — keys live on backend; optional client env for docs
+  EXPO_PUBLIC_PAYU_KEY: "",
+  EXPO_PUBLIC_PAYU_ENV: "production",
 };
 

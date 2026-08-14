@@ -11,7 +11,7 @@ import { colors } from "../../theme/colors";
 
 export default function PrivacyScreen() {
   const handleEmail = () => {
-    Linking.openURL("mailto:Help@parcelwalah.in");
+    Linking.openURL("mailto:Contact@parcelwalah.in");
   };
 
   return (
@@ -35,7 +35,7 @@ export default function PrivacyScreen() {
             <Text style={styles.paragraph}>
               <Text style={styles.bold}>Email:</Text>{" "}
               <Text style={styles.link} onPress={handleEmail}>
-                Help@parcelwalah.in
+                Contact@parcelwalah.in
               </Text>
             </Text>
           </Card>
@@ -73,7 +73,7 @@ export default function PrivacyScreen() {
             <Text style={styles.paragraph}>
               You may request access, correction, or deletion of your data at:{" "}
               <Text style={styles.link} onPress={handleEmail}>
-                Help@parcelwalah.in
+                Contact@parcelwalah.in
               </Text>
             </Text>
           </Card>

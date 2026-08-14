@@ -11,7 +11,7 @@ import { colors } from "../../theme/colors";
 
 export default function TermsScreen() {
   const handleEmail = () => {
-    Linking.openURL("mailto:Help@parcelwalah.in");
+    Linking.openURL("mailto:Contact@parcelwalah.in");
   };
 
   return (
@@ -52,7 +52,7 @@ export default function TermsScreen() {
             <Text style={styles.paragraph}>
               For cancellation support, contact:{" "}
               <Text style={styles.link} onPress={handleEmail}>
-                Help@parcelwalah.in
+                Contact@parcelwalah.in
               </Text>
             </Text>
           </Card>
@@ -114,7 +114,7 @@ export default function TermsScreen() {
             <Text style={styles.paragraph}>
               For refund requests, contact:{" "}
               <Text style={styles.link} onPress={handleEmail}>
-                Help@parcelwalah.in
+                Contact@parcelwalah.in
               </Text>
             </Text>
           </Card>
@@ -128,7 +128,7 @@ export default function TermsScreen() {
             <Text style={styles.paragraph}>
               For any questions or concerns, please contact us at:{" "}
               <Text style={styles.link} onPress={handleEmail}>
-                Help@parcelwalah.in
+                Contact@parcelwalah.in
               </Text>
             </Text>
           </Card>

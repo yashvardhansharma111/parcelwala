@@ -55,12 +55,12 @@ export default function PaymentSuccessScreen() {
             const apiUrl = `/api/payments/success?merchantRefId=${encodeURIComponent(merchantRefId)}`;
             
             // Call backend to get bookingId from merchantRefId
-            const response = await apiRequest<{ success: boolean; bookingId?: string; message?: string }>(
+            const response = await apiRequest<{ status: string; bookingId?: string; message?: string }>(
               apiUrl,
               { method: "GET" }
             );
-            
-            if (response.success && response.bookingId) {
+
+            if (response?.status === "SUCCESS" && response.bookingId) {
               finalBookingId = response.bookingId;
               setResolvedBookingId(finalBookingId);
               await fetchBooking(finalBookingId);
@@ -149,11 +149,11 @@ export default function PaymentSuccessScreen() {
           title="Go to Home"
           onPress={() => {
                     try {
-                      router.replace("/(customer)/home" as any);
+                      router.replace("/(customer)/(tabs)" as any);
                     } catch (error) {
                       if (__DEV__) console.error('[PaymentSuccess] Error navigating to home:', error);
                       try {
-                        router.push("/(customer)/home" as any);
+                        router.push("/(customer)/(tabs)" as any);
                       } catch (pushError) {
                         if (__DEV__) console.error('[PaymentSuccess] Push also failed:', pushError);
                       }

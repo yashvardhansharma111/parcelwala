@@ -54,14 +54,14 @@ export default function HelpScreen() {
           <Card>
             <TouchableOpacity
               style={styles.contactItem}
-              onPress={() => handleEmail("Help@parcelwalah.in")}
+              onPress={() => handleEmail("Contact@parcelwalah.in")}
             >
               <View style={styles.contactIcon}>
                 <Feather name="mail" size={24} color={colors.primary} />
               </View>
               <View style={styles.contactInfo}>
                 <Text style={styles.contactLabel}>Email</Text>
-                <Text style={styles.contactValue}>Help@parcelwalah.in</Text>
+                <Text style={styles.contactValue}>Contact@parcelwalah.in</Text>
               </View>
             </TouchableOpacity>
           </Card>
@@ -125,7 +125,7 @@ export default function HelpScreen() {
 
             <Text style={styles.faqQuestion}>How do I request a refund?</Text>
             <Text style={styles.faqAnswer}>
-              Contact us at Help@parcelwalah.in with your booking details. Refunds
+              Contact us at Contact@parcelwalah.in with your booking details. Refunds
               are processed within 5-7 business days if approved.
             </Text>
           </Card>

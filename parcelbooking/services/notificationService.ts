@@ -109,10 +109,19 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
     // Get current user from auth store
     const { user } = useAuthStore.getState();
-    
+
     if (!user) {
       // User not authenticated, skipping registration
       return null;
+    }
+
+    // Link Firebase UID as external user ID before requesting permission.
+    // This ensures the backend's include_external_user_ids fallback works even
+    // if getIdAsync() returns null (SDK still initializing or permission not yet granted).
+    try {
+      OneSignal.login(user.id);
+    } catch (error: any) {
+      console.error("[OneSignal] Error setting external user ID:", error);
     }
 
     // Prompt for push notification permission
@@ -123,18 +132,8 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
     if (!playerId) {
       console.warn("[OneSignal] No Player ID available yet. OneSignal may still be initializing.");
-      // Return null but don't throw - OneSignal will initialize asynchronously
+      // External user ID is already registered above — backend can still reach the user.
       return null;
-    }
-
-    // Player ID obtained
-
-    // Set external user ID to link OneSignal user to Firebase user
-    try {
-      OneSignal.login(user.id); // Use user.id (Firebase UID)
-      // External User ID set
-    } catch (error: any) {
-      console.error("[OneSignal] Error setting external user ID:", error);
     }
 
     // Register Player ID with backend

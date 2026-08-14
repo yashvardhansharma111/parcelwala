@@ -112,6 +112,7 @@ export const getAllBookings = async (
   filters?: {
     status?: BookingStatus;
     paymentStatus?: PaymentStatus;
+    assignmentStatus?: string;
   },
   options?: {
     limit?: number;
@@ -126,6 +127,7 @@ export const getAllBookings = async (
     const queryParams = new URLSearchParams();
     if (filters?.status) queryParams.append("status", filters.status);
     if (filters?.paymentStatus) queryParams.append("paymentStatus", filters.paymentStatus);
+    if (filters?.assignmentStatus) queryParams.append("assignmentStatus", filters.assignmentStatus);
     if (options?.limit) queryParams.append("limit", options.limit.toString());
     if (options?.lastDocId) queryParams.append("lastDocId", options.lastDocId);
 
@@ -246,28 +248,20 @@ export const subscribeToUserBookings = (
   // Fetch bookings initially
   getUserBookings()
     .then((result) => callback(result.bookings))
-    .catch((error) => {
-      console.error("Error fetching bookings:", error);
-    });
+    .catch(() => {});
 
-  // Return empty unsubscribe function (no subscription)
   return () => {};
 };
 
 /**
  * Subscribe to all bookings (Admin - real-time updates)
- * NOTE: Real-time subscriptions removed - use polling or websockets if needed
- * For now, this is a placeholder that just fetches bookings once
  */
 export const subscribeToAllBookings = (
   callback: (bookings: Booking[]) => void
 ): (() => void) => {
-  // Fetch bookings initially
   getAllBookings()
     .then((result) => callback(result.bookings))
-    .catch((error) => {
-      console.error("Error fetching bookings:", error);
-    });
+    .catch(() => {});
 
   // Return empty unsubscribe function (no subscription)
   return () => {};
@@ -289,6 +283,31 @@ export const trackBooking = async (trackingNumber: string): Promise<Booking | nu
     }
     throw new Error(error.message || "Failed to track booking");
   }
+};
+
+export interface BookingTracking {
+  bookingId: string;
+  trackingNumber?: string;
+  status: string;
+  assignmentStatus?: string;
+  rider: {
+    id: string;
+    name?: string;
+    phone?: string;
+    location: { lat: number; lon: number; updatedAt: string | Date } | null;
+  } | null;
+  pickup: any;
+  drop: any;
+}
+
+export const getBookingTracking = async (
+  bookingId: string
+): Promise<BookingTracking> => {
+  const response = await apiRequest<{ tracking: BookingTracking }>(
+    `/bookings/${bookingId}/tracking`,
+    { method: "GET" }
+  );
+  return response.tracking;
 };
 
 /**
@@ -347,26 +366,20 @@ export const getBookingStatistics = async (): Promise<{
 };
 
 /**
- * Cancel booking
+ * Cancel booking (customer)
  */
 export const cancelBooking = async (
   bookingId: string,
-  cancelReason?: string
+  reason?: string
 ): Promise<Booking> => {
   try {
-    const body: any = { status: "Cancelled" };
-    if (cancelReason) {
-      body.returnReason = cancelReason; // Reuse returnReason field for cancel reason
-    }
-
     const response = await apiRequest<{ booking: Booking }>(
-      `/bookings/${bookingId}/status`,
+      `/bookings/${bookingId}/cancel`,
       {
-        method: "PATCH",
-        body: JSON.stringify(body),
+        method: "POST",
+        body: JSON.stringify({ reason: reason || "Customer requested cancellation" }),
       }
     );
-
     return response.booking;
   } catch (error: any) {
     throw new Error(error.message || "Failed to cancel booking");

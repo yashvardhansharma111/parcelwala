@@ -20,6 +20,11 @@ const isWorkletsPlugin = (plugin) => {
 module.exports = function (config = {}) {
   // Environment / app.json / defaults
   const ONESIGNAL_APP_ID = process.env.ONESIGNAL_APP_ID || (appJson.expo?.extra?.onesignal?.appId) || null;
+  const GOOGLE_MAPS_API_KEY =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
+    process.env.GOOGLE_MAPS_API_KEY ||
+    (appJson.expo?.android?.config?.googleMaps?.apiKey) ||
+    "";
   const DEFAULT_PACKAGE = "com.parcelwala.app";
 
   // Resolve package with precedence: env var -> config.android.package -> app.json -> DEFAULT
@@ -56,6 +61,24 @@ module.exports = function (config = {}) {
     pluginMap.set('onesignal-expo-plugin', ['onesignal-expo-plugin', { mode: 'production' }]);
   }
 
+  if (!pluginMap.has('@react-native-community/datetimepicker')) {
+  pluginMap.set('@react-native-community/datetimepicker', '@react-native-community/datetimepicker');
+}
+
+  if (!pluginMap.has('expo-web-browser')) {
+  pluginMap.set('expo-web-browser', 'expo-web-browser');
+}
+
+  if (!pluginMap.has('expo-location')) {
+    pluginMap.set('expo-location', [
+      'expo-location',
+      {
+        locationWhenInUsePermission:
+          'Allow ParcelWalah to use your location for pickup and delivery addresses.',
+      },
+    ]);
+  }
+
   const filteredPlugins = Array.from(pluginMap.values()).filter((p) => !isWorkletsPlugin(p));
 
   // Build 'extra' merging app.json and config safely
@@ -66,6 +89,7 @@ module.exports = function (config = {}) {
       ...(appJson.expo?.extra?.onesignal || config.extra?.onesignal || {}),
       appId: ONESIGNAL_APP_ID || (appJson.expo?.extra?.onesignal?.appId || null),
     },
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY || null,
   };
 
   // Build final config defensively
@@ -90,8 +114,23 @@ module.exports = function (config = {}) {
       label: config.android?.label || appJson.expo?.android?.label || "ParcelWalah",
       usesCleartextTraffic: (config.android?.usesCleartextTraffic ?? appJson.expo?.android?.usesCleartextTraffic ?? true),
       googleServicesFile: config.android?.googleServicesFile || appJson.expo?.android?.googleServicesFile || "./google-services.json",
+      config: {
+        ...(appJson.expo?.android?.config || {}),
+        ...(config.android?.config || {}),
+        // Only inject the key when it's actually set — empty string causes native crash
+        ...(GOOGLE_MAPS_API_KEY ? { googleMaps: { apiKey: GOOGLE_MAPS_API_KEY } } : {}),
+      },
     },
-    ios: config.ios || appJson.expo?.ios,
+    ios: {
+      ...(appJson.expo?.ios || {}),
+      ...(config.ios || {}),
+      config: {
+        ...(appJson.expo?.ios?.config || {}),
+        ...(config.ios?.config || {}),
+        // Same key until a dedicated iOS key is provided
+        googleMapsApiKey: GOOGLE_MAPS_API_KEY || undefined,
+      },
+    },
     web: config.web || appJson.expo?.web,
     _internal: {
       ...(config._internal || {}),

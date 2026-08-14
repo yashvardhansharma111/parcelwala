@@ -7,6 +7,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
 
 interface HeaderProps {
@@ -23,9 +24,10 @@ export const Header: React.FC<HeaderProps> = ({
   style,
 }) => {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.header, style]}>
+    <View style={[styles.header, { paddingTop: insets.top + 12 }, style]}>
       {showBack && (
         <TouchableOpacity
           style={styles.backButton}
@@ -45,7 +47,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 16,
     paddingBottom: 12,
     backgroundColor: colors.background,
     borderBottomWidth: 1,

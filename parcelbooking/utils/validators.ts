@@ -32,8 +32,8 @@ export const validateAddress = (address: {
   phone: string;
   address: string;
   city: string;
-  state: string;
-  pincode: string;
+  state?: string;
+  pincode?: string;
 }): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
@@ -51,14 +51,6 @@ export const validateAddress = (address: {
 
   if (!address.city || address.city.trim().length < 2) {
     errors.push("City is required");
-  }
-
-  if (!address.state || address.state.trim().length < 2) {
-    errors.push("State is required");
-  }
-
-  if (!validatePinCode(address.pincode)) {
-    errors.push("Invalid PIN code format");
   }
 
   return {

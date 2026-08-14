@@ -10,6 +10,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
+  TextInput,
+  Alert,
+  Modal,
 } from "react-native";
 import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useBooking } from "../../../hooks/useBooking";
@@ -23,12 +27,19 @@ import { formatDateTime } from "../../../utils/formatters";
 import { STATUS_TYPES, STATUS_COLORS } from "../../../utils/constants";
 import { Feather } from "@expo/vector-icons";
 import { BookingStatus } from "../../../utils/types";
+import * as bookingService from "../../../services/bookingService";
+import { useFocusRefresh } from "../../../hooks/useFocusRefresh";
+import { LiveTrackingMap } from "../../../components/LiveTrackingMap";
 
 export default function TrackBookingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { selectedBooking, fetchBooking, trackBooking, loading } = useBooking();
   const [trackingNumber, setTrackingNumber] = useState(id || "");
+  const [tracking, setTracking] = useState<bookingService.BookingTracking | null>(null);
+  const [cancelModal, setCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -87,6 +98,42 @@ export default function TrackBookingScreen() {
     }
   }, [id, selectedBooking?.status, selectedBooking?.paymentStatus]); // Removed fetchBooking from dependencies
 
+  // Auto-refresh booking + rider location every 8s while this screen is open
+  useFocusRefresh(
+    async () => {
+      if (!id || id.includes("PBS") || id.length > 20) return;
+      try {
+        await fetchBooking(id);
+      } catch {
+        /* ignore */
+      }
+      try {
+        const t = await bookingService.getBookingTracking(id);
+        setTracking(t);
+      } catch {
+        setTracking(null);
+      }
+    },
+    8000,
+    !!id
+  );
+
+  const submitCancel = async () => {
+    if (!selectedBooking) return;
+    try {
+      setCancelling(true);
+      await bookingService.cancelBooking(selectedBooking.id, cancelReason.trim() || "Customer requested cancellation");
+      setCancelModal(false);
+      setCancelReason("");
+      await fetchBooking(selectedBooking.id);
+      Alert.alert("Cancelled", "Your booking has been cancelled.");
+    } catch (e: any) {
+      Alert.alert("Cannot cancel", e.message || "Failed to cancel booking");
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const getStatusIcon = (status: BookingStatus): keyof typeof Feather.glyphMap => {
     switch (status) {
       case "Created":
@@ -121,13 +168,29 @@ export default function TrackBookingScreen() {
         <Header title="Track Parcel" showBack />
         <View style={styles.searchContainer}>
           <Text style={styles.label}>Enter Tracking Number</Text>
+          <TextInput
+            style={styles.trackingInput}
+            value={trackingNumber}
+            onChangeText={setTrackingNumber}
+            placeholder="e.g. PW-27-07-2026-001"
+            placeholderTextColor={colors.textLight}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            returnKeyType="search"
+            onSubmitEditing={() => {
+              const q = trackingNumber.trim();
+              if (q) trackBooking(q);
+            }}
+          />
           <TouchableOpacity
-            style={styles.searchButton}
+            style={[
+              styles.searchButton,
+              !trackingNumber.trim() && styles.searchButtonDisabled,
+            ]}
+            disabled={!trackingNumber.trim()}
             onPress={() => {
-              if (trackingNumber) {
-                // Use trackBooking for tracking numbers
-                trackBooking(trackingNumber);
-              }
+              const q = trackingNumber.trim();
+              if (q) trackBooking(q);
             }}
           >
             <Text style={styles.searchButtonText}>Track</Text>
@@ -168,6 +231,140 @@ export default function TrackBookingScreen() {
               Created: {formatDateTime(selectedBooking.createdAt)}
             </Text>
           </Card>
+
+          {(selectedBooking.pickup?.lat != null ||
+            selectedBooking.drop?.lat != null ||
+            tracking?.rider?.location) && (
+            <Card>
+              <Text style={styles.sectionTitle}>Live Map</Text>
+              <LiveTrackingMap
+                height={260}
+                pickup={
+                  selectedBooking.pickup?.lat != null &&
+                  selectedBooking.pickup?.lon != null
+                    ? {
+                        latitude: selectedBooking.pickup.lat,
+                        longitude: selectedBooking.pickup.lon,
+                        title: "Pickup",
+                        description: selectedBooking.pickup.address,
+                      }
+                    : null
+                }
+                drop={
+                  selectedBooking.drop?.lat != null &&
+                  selectedBooking.drop?.lon != null
+                    ? {
+                        latitude: selectedBooking.drop.lat,
+                        longitude: selectedBooking.drop.lon,
+                        title: "Drop",
+                        description: selectedBooking.drop.address,
+                      }
+                    : null
+                }
+                rider={
+                  tracking?.rider?.location
+                    ? {
+                        latitude: tracking.rider.location.lat,
+                        longitude: tracking.rider.location.lon,
+                        title: tracking.rider.name || "Rider",
+                        description: "Live location",
+                      }
+                    : null
+                }
+              />
+              {tracking?.rider?.location?.updatedAt ? (
+                <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 8 }}>
+                  Rider updated {formatDateTime(tracking.rider.location.updatedAt as any)}
+                </Text>
+              ) : null}
+            </Card>
+          )}
+
+          {(selectedBooking.riderId || tracking?.rider) && (
+            <Card>
+              <Text style={styles.sectionTitle}>Your Rider</Text>
+              <Text style={{ fontWeight: "600", color: colors.text, marginBottom: 4 }}>
+                {tracking?.rider?.name || selectedBooking.riderName || "Assigned"}
+              </Text>
+              {(selectedBooking as any).pickupOtp || (selectedBooking as any).dropOtp ? (
+                <View style={{ marginTop: 12, padding: 12, backgroundColor: "#FFF3E6", borderRadius: 12 }}>
+                  <Text style={{ fontWeight: "700", color: colors.primary, marginBottom: 6 }}>
+                    Share OTP with rider
+                  </Text>
+                  {(selectedBooking as any).pickupOtp &&
+                    !["Picked", "Shipped", "Delivered"].includes(selectedBooking.status) && (
+                      <Text style={{ color: colors.text, marginBottom: 4 }}>
+                        Pickup OTP:{" "}
+                        <Text style={{ fontWeight: "800", letterSpacing: 2 }}>
+                          {(selectedBooking as any).pickupOtp}
+                        </Text>
+                      </Text>
+                    )}
+                  {(selectedBooking as any).dropOtp &&
+                    ["Picked", "Shipped"].includes(selectedBooking.status) && (
+                      <Text style={{ color: colors.text }}>
+                        Drop OTP:{" "}
+                        <Text style={{ fontWeight: "800", letterSpacing: 2 }}>
+                          {(selectedBooking as any).dropOtp}
+                        </Text>
+                      </Text>
+                    )}
+                </View>
+              ) : null}
+              {(tracking?.rider?.phone || selectedBooking.riderPhone) && (
+                <TouchableOpacity
+                  onPress={() =>
+                    Linking.openURL(
+                      `tel:${(tracking?.rider?.phone || selectedBooking.riderPhone || "").replace(/\s/g, "")}`
+                    )
+                  }
+                  style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}
+                >
+                  <Feather name="phone" size={16} color={colors.primary} />
+                  <Text style={{ color: colors.primary }}>
+                    {tracking?.rider?.phone || selectedBooking.riderPhone}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {!tracking?.rider?.location && ["Picked", "Shipped"].includes(selectedBooking.status) && (
+                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
+                  Waiting for rider location…
+                </Text>
+              )}
+            </Card>
+          )}
+
+          {selectedBooking.status === "DeliveryFailed" && (
+            <Card style={{ backgroundColor: "#FEE2E2", borderColor: "#DC2626" }}>
+              <Text style={{ fontWeight: "700", color: "#DC2626", fontSize: 15 }}>
+                Delivery Attempt Failed
+              </Text>
+              <Text style={{ color: "#7F1D1D", marginTop: 4, fontSize: 13 }}>
+                Your rider attempted delivery but couldn't complete it. Another attempt will be made or the parcel may be returned.
+              </Text>
+            </Card>
+          )}
+
+          {selectedBooking.status === "ReturnInProgress" && (
+            <Card style={{ backgroundColor: "#FFF7ED", borderColor: "#F97316" }}>
+              <Text style={{ fontWeight: "700", color: "#C2410C", fontSize: 15 }}>
+                Parcel Being Returned
+              </Text>
+              <Text style={{ color: "#7C2D12", marginTop: 4, fontSize: 13 }}>
+                The rider is returning your parcel. A refund will be processed if payment was made online.
+              </Text>
+            </Card>
+          )}
+
+          {!["Delivered", "Cancelled", "Returned", "DeliveryFailed", "ReturnInProgress"].includes(selectedBooking.status) && (
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => setCancelModal(true)}
+            >
+              <Feather name="x-circle" size={16} color="#DC2626" />
+              <Text style={styles.cancelBtnText}>Cancel Booking</Text>
+            </TouchableOpacity>
+          )}
 
           <Card>
             <Text style={styles.sectionTitle}>Status Timeline</Text>
@@ -309,6 +506,42 @@ export default function TrackBookingScreen() {
           )}
         </View>
       </ScrollView>
+
+      <Modal visible={cancelModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Cancel Booking</Text>
+            {selectedBooking?.riderId && (
+              <Text style={styles.modalWarning}>
+                A rider is already assigned. A cancellation fee of ₹30 may apply.
+              </Text>
+            )}
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Reason for cancellation (optional)"
+              placeholderTextColor={colors.textLight}
+              value={cancelReason}
+              onChangeText={setCancelReason}
+            />
+            <TouchableOpacity
+              style={[styles.modalConfirmBtn, cancelling && { opacity: 0.6 }]}
+              onPress={submitCancel}
+              disabled={cancelling}
+            >
+              <Text style={styles.modalConfirmText}>
+                {cancelling ? "Cancelling…" : "Confirm Cancel"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalDismissBtn}
+              onPress={() => setCancelModal(false)}
+              disabled={cancelling}
+            >
+              <Text style={styles.modalDismissText}>Keep Booking</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -326,7 +559,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 24,
-    alignItems: "center",
+    alignItems: "stretch",
   },
   label: {
     fontSize: 16,
@@ -334,11 +567,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 16,
   },
+  trackingInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.background,
+    marginBottom: 16,
+  },
   searchButton: {
     backgroundColor: colors.primary,
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,
+    alignItems: "center",
+  },
+  searchButtonDisabled: {
+    opacity: 0.5,
   },
   searchButtonText: {
     color: colors.background,
@@ -447,6 +695,67 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.primary,
   },
+  cancelBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#FEE2E2",
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  cancelBtnText: {
+    color: "#DC2626",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "flex-end",
+  },
+  modal: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 12,
+  },
+  modalWarning: {
+    backgroundColor: "#FEF3C7",
+    color: "#92400E",
+    padding: 10,
+    borderRadius: 8,
+    fontSize: 13,
+    marginBottom: 12,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 12,
+    color: colors.text,
+    marginBottom: 16,
+  },
+  modalConfirmBtn: {
+    backgroundColor: "#DC2626",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  modalConfirmText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  modalDismissBtn: { paddingVertical: 10, alignItems: "center" },
+  modalDismissText: { color: colors.textSecondary, fontSize: 15 },
   invoiceButton: {
     flexDirection: "row",
     alignItems: "center",

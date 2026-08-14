@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useRouter, useFocusEffect } from "expo-router";
+import { useRouter, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useBooking } from "../../../hooks/useBooking";
 import { useAuthStore } from "../../../store/authStore";
 import { Card } from "../../../components/Card";
@@ -29,9 +29,26 @@ import { cancelBooking } from "../../../services/bookingService";
 
 export default function BookingHistoryScreen() {
   const router = useRouter();
+  const { paymentFailed } = useLocalSearchParams<{ paymentFailed?: string }>();
   const { user } = useAuthStore();
   const { bookings, loading, loadingMore, hasMore, fetchBookings, loadMoreBookings } = useBooking();
   const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+  const [shownFailAlert, setShownFailAlert] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchBookings();
+      }
+      if (paymentFailed === "true" && !shownFailAlert) {
+        setShownFailAlert(true);
+        Alert.alert(
+          "Payment failed",
+          "Your payment did not complete. Tap Pay again on the pending booking to retry."
+        );
+      }
+    }, [user, fetchBookings, paymentFailed, shownFailAlert])
+  );
 
   const handleCancelBooking = async (bookingId: string) => {
     Alert.alert(
@@ -62,17 +79,13 @@ export default function BookingHistoryScreen() {
     );
   };
 
-  // Fetch bookings when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      if (user) {
-        fetchBookings();
-      }
-    }, [user, fetchBookings])
-  );
-
   const renderBookingItem = ({ item }: { item: Booking }) => {
     const canCancel = item.status === "Created" || item.status === "PendingPayment";
+    const needsPayment =
+      item.paymentMethod === "online" &&
+      (item.status === "PendingPayment" ||
+        item.paymentStatus === "pending" ||
+        item.paymentStatus === "failed");
     const isCancelling = cancellingBookingId === item.id;
     return (
       <Card style={styles.bookingCard}>
@@ -92,6 +105,14 @@ export default function BookingHistoryScreen() {
             </View>
             <StatusBadge status={item.status} />
           </View>
+          {item.riderName ? (
+            <Text style={styles.riderChip}>Rider: {item.riderName}</Text>
+          ) : item.assignmentStatus === "no_rider" ? (
+            <Text style={styles.noRiderText}>No rider available — please try again</Text>
+          ) : item.assignmentStatus === "offered" ||
+            (item.status === "Created" && !item.riderId) ? (
+            <Text style={styles.riderPending}>Finding a rider…</Text>
+          ) : null}
           <View style={styles.bookingFooter}>
             <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
             {item.fare && (
@@ -99,24 +120,36 @@ export default function BookingHistoryScreen() {
             )}
           </View>
         </TouchableOpacity>
-        {canCancel && (
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleCancelBooking(item.id);
-            }}
-            disabled={isCancelling}
-          >
-            <Feather 
-              name="x-circle" 
-              size={16} 
-              color={colors.error} 
-            />
-            <Text style={styles.cancelButtonText}>
-              {isCancelling ? "Cancelling..." : "Cancel"}
-            </Text>
-          </TouchableOpacity>
+        {(needsPayment || canCancel) && (
+          <View style={styles.actionRow}>
+            {needsPayment && (
+              <TouchableOpacity
+                style={styles.payAgainButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(`/(customer)/payment?id=${item.id}` as any);
+                }}
+              >
+                <Feather name="credit-card" size={16} color={colors.primary} />
+                <Text style={styles.payAgainText}>Pay again</Text>
+              </TouchableOpacity>
+            )}
+            {canCancel && (
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleCancelBooking(item.id);
+                }}
+                disabled={isCancelling}
+              >
+                <Feather name="x-circle" size={16} color={colors.error} />
+                <Text style={styles.cancelButtonText}>
+                  {isCancelling ? "Cancelling..." : "Cancel"}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
       </Card>
     );
@@ -195,6 +228,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  riderChip: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  riderPending: {
+    fontSize: 13,
+    color: colors.warning,
+    marginBottom: 8,
+  },
+  noRiderText: {
+    fontSize: 13,
+    color: colors.error,
+    marginBottom: 8,
+    fontWeight: "500",
+  },
   bookingFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -216,14 +266,37 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: "center",
   },
-  cancelButton: {
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 12,
+  },
+  payAgainButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    marginTop: 12,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
+    backgroundColor: colors.primary + "12",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  payAgainText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  cancelButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: colors.error + "10",
     borderRadius: 8,
     borderWidth: 1,

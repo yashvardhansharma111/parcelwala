@@ -23,6 +23,7 @@ import { Loader } from "../../components/Loader";
 import { colors } from "../../theme/colors";
 import { Feather } from "@expo/vector-icons";
 import { userApi } from "../../services/apiClient";
+import { setUser as persistUser } from "../../services/tokenStorage";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -54,11 +55,11 @@ export default function ProfileScreen() {
     try {
       setSaving(true);
       const updatedUser = await userApi.updateProfile({ name: name.trim() });
+      await persistUser(updatedUser);
       setUser(updatedUser);
       setIsEditing(false);
       Alert.alert("Success", "Profile updated successfully");
     } catch (error: any) {
-      console.error("Error updating profile:", error);
       Alert.alert("Error", error.message || "Failed to update profile");
     } finally {
       setSaving(false);
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
             <Text style={styles.label}>Account Type</Text>
             <View style={styles.roleContainer}>
               <Text style={styles.roleValue}>
-                {user?.role === "admin" ? "Administrator" : "Customer"}
+                {"Customer"}
               </Text>
             </View>
           </View>
@@ -220,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
   roleContainer: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.surface,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,

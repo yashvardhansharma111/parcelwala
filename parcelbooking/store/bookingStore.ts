@@ -17,6 +17,7 @@ interface BookingState {
     status?: BookingStatus;
     paymentStatus?: string;
     searchQuery?: string;
+    assignmentStatus?: string;
   };
   setBookings: (bookings: Booking[]) => void;
   appendBookings: (bookings: Booking[]) => void;

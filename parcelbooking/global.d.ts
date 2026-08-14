@@ -2,18 +2,6 @@
 
 declare var __DEV__: boolean;
 
-// React Native module declaration
-declare module 'react-native' {
-  export const Platform: {
-    OS: 'ios' | 'android' | 'web' | 'windows' | 'macos';
-    Version: number;
-    select<T>(spec: { [key: string]: T }): T;
-  };
-  
-  // Add other commonly used exports
-  export * from '@types/react-native';
-}
-
 // Fetch API types (available in React Native)
 interface RequestInit {
   method?: string;
