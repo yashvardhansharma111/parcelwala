@@ -285,12 +285,12 @@ export default function WaitingScreen() {
             )}
 
             <Text style={styles.bigTitle}>
-              {phase === "arrived_pickup" ? "Captain arrived!" : "Captain assigned!"}
+              {phase === "arrived_pickup" ? "Arrived" : "On the way"}
             </Text>
             <Text style={styles.subtitle}>
               {phase === "arrived_pickup"
-                ? "Your captain has arrived at the pickup location."
-                : "Your captain is on the way to pick up your parcel."}
+                ? "Captain has arrived at pickup location."
+                : "Captain is on the way to pick up your parcel."}
             </Text>
 
             <View style={styles.riderRow}>
@@ -315,6 +315,14 @@ export default function WaitingScreen() {
               </View>
             ) : null}
 
+            {booking?.dropOtp ? (
+              <View style={[styles.otpBox, { borderColor: colors.warning }]}>
+                <Text style={styles.otpLabel}>Delivery OTP</Text>
+                <Text style={[styles.otpCode, { color: colors.warning }]}>{booking.dropOtp}</Text>
+                <Text style={styles.otpHint}>Share this code with your receiver — they'll need it at delivery</Text>
+              </View>
+            ) : null}
+
             <TouchableOpacity style={styles.trackLink} onPress={goToTrack}>
               <Feather name="map-pin" size={14} color={colors.primary} />
               <Text style={styles.trackLinkText}>Live tracking</Text>
@@ -325,8 +333,15 @@ export default function WaitingScreen() {
         {phase === "picked" && (
           <View style={styles.card}>
             <Feather name="package" size={48} color={colors.success} style={styles.bigIcon} />
-            <Text style={styles.bigTitle}>Parcel picked up!</Text>
-            <Text style={styles.subtitle}>Your parcel is on the way to the drop location.</Text>
+            <Text style={styles.bigTitle}>Started</Text>
+            <Text style={styles.subtitle}>Parcel picked up. On the way to drop location.</Text>
+            {booking?.dropOtp ? (
+              <View style={[styles.otpBox, { borderColor: colors.warning }]}>
+                <Text style={styles.otpLabel}>Delivery OTP</Text>
+                <Text style={[styles.otpCode, { color: colors.warning }]}>{booking.dropOtp}</Text>
+                <Text style={styles.otpHint}>Your receiver will need this code to accept delivery</Text>
+              </View>
+            ) : null}
             <TouchableOpacity style={styles.trackLink} onPress={goToTrack}>
               <Feather name="map-pin" size={14} color={colors.primary} />
               <Text style={styles.trackLinkText}>Track live</Text>
@@ -337,8 +352,8 @@ export default function WaitingScreen() {
         {phase === "reached_drop" && (
           <View style={styles.card}>
             <Feather name="map-pin" size={48} color={colors.warning} style={styles.bigIcon} />
-            <Text style={styles.bigTitle}>Captain at delivery!</Text>
-            <Text style={styles.subtitle}>Your captain has reached the delivery location.</Text>
+            <Text style={styles.bigTitle}>Reached</Text>
+            <Text style={styles.subtitle}>Captain has reached the delivery location.</Text>
             {booking?.dropOtp ? (
               <View style={[styles.otpBox, { borderColor: colors.warning }]}>
                 <Text style={styles.otpLabel}>Delivery OTP</Text>

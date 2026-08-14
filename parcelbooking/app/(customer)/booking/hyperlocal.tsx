@@ -36,8 +36,6 @@ import {
   SavedLocation,
 } from "../../../services/savedLocationsService";
 
-const CITY = "Ujjain";
-
 const ICONS: Record<SavedLocation["icon"], keyof typeof Feather.glyphMap> = {
   home: "home",
   briefcase: "briefcase",
@@ -169,7 +167,7 @@ export default function HyperlocalScreen() {
         name: pickupName || user?.name || "Pickup",
         phone: pickupPhone || user?.phoneNumber || "",
         address: details.address || pickupText,
-        city: details.city || CITY,
+        city: details.city || "",
         state: details.state || "Madhya Pradesh",
         pincode: details.pincode || "",
         street: details.street,
@@ -269,7 +267,7 @@ export default function HyperlocalScreen() {
       label,
       icon,
       address,
-      city: city || CITY,
+      city: city || "",
       state: state || "Madhya Pradesh",
       pincode: pincode || "",
       lat: coords.lat,
@@ -317,7 +315,7 @@ export default function HyperlocalScreen() {
         name: pickupName.trim(),
         phone: pickupPhone.trim(),
         address: pickupText.trim(),
-        city: pickup.city || CITY,
+        city: pickup.city || "",
         state: pickup.state || "Madhya Pradesh",
       },
       pickupCoords
@@ -328,7 +326,7 @@ export default function HyperlocalScreen() {
         name: dropName.trim(),
         phone: dropPhone.trim(),
         address: dropText.trim(),
-        city: drop.city || CITY,
+        city: drop.city || "",
         state: drop.state || "Madhya Pradesh",
       },
       dropCoords
@@ -349,7 +347,7 @@ export default function HyperlocalScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
-          <Text style={styles.badge}>Within City · {CITY}</Text>
+          <Text style={styles.badge}>Within City</Text>
 
           {/* Saved locations strip */}
           {savedLocs.length > 0 && (
@@ -392,7 +390,6 @@ export default function HyperlocalScreen() {
                 pinColor={colors.success}
                 value={pickupText}
                 onChangeText={setPickupText}
-                cityBias={CITY}
                 locating={locating}
                 onLocate={applyGps}
                 onSelect={(address, coords) => {
@@ -401,7 +398,7 @@ export default function HyperlocalScreen() {
                       ...address,
                       name: pickupName || address.name,
                       phone: pickupPhone || user?.phoneNumber || "",
-                      city: CITY,
+                      city: address.city || "",
                     },
                     coords
                   );
@@ -425,7 +422,6 @@ export default function HyperlocalScreen() {
                 pinColor={colors.primary}
                 value={dropText}
                 onChangeText={setDropText}
-                cityBias={CITY}
                 placeholder="Where should we deliver?"
                 onSelect={(address, coords) => {
                   setDrop(
@@ -433,7 +429,7 @@ export default function HyperlocalScreen() {
                       ...address,
                       name: dropName || address.name,
                       phone: dropPhone,
-                      city: CITY,
+                      city: address.city || "",
                     },
                     coords
                   );

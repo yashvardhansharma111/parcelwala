@@ -120,13 +120,13 @@ export default function HyperlocalConfirmScreen() {
       ...pickup,
       lat: pickupCoords.lat,
       lon: pickupCoords.lon,
-      city: pickup.city || "Ujjain",
+      city: pickup.city || "",
     };
     const dropWithCoords = {
       ...drop,
       lat: dropCoords.lat,
       lon: dropCoords.lon,
-      city: drop.city || "Ujjain",
+      city: drop.city || "",
     };
     const parcel = { ...parcelDetails, weight, type: parcelDetails.type || "Other" };
 

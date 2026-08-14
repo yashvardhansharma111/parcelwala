@@ -44,7 +44,7 @@ export function LocationField({
   onLocate,
   locating,
   placeholder,
-  cityBias = "Ujjain",
+  cityBias = "",
 }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
